@@ -289,7 +289,7 @@ function defaultData(){
   return {
     settings:{
       branch:'Cơ sở 3',
-      sheetUrl:'https://docs.google.com/spreadsheets/d/1ZWwDEWoZyhM9c6yfVPTTnHj5649NDkrtp1yrVUy-fDA/edit?gid=1611437518',
+      sheetUrl:'https://docs.google.com/spreadsheets/d/14kMj5VarO4H-QuYbG1Sj95gCDQU3J8S5QskKl8XBZEg/edit?gid=1443153493',
       minShifts:0,                        // số ca tối thiểu mỗi người/tuần (0 = tắt)
       positions:['Pha chế','Phục vụ'],   // Giữ xe là 1 phục vụ được đánh dấu (flag bike)
       // định mức người mỗi ca (period) theo từng vị trí
@@ -326,6 +326,8 @@ function migrate(r){
   if(!r.settings.positions||!r.settings.positions.length) r.settings.positions=d.settings.positions;
   if(!r.settings.req) r.settings.req=d.settings.req;
   if(r.settings.sheetUrl==null) r.settings.sheetUrl='';
+  // đổi link sheet cũ -> sheet mới (Cơ sở 3, bản availability)
+  if(r.settings.sheetUrl.includes('1ZWwDEWoZyhM9c6yfVPTTnHj5649NDkrtp1yrVUy-fDA')) r.settings.sheetUrl=d.settings.sheetUrl;
   if(r.settings.minShifts==null) r.settings.minShifts=0;
   // Giữ xe không còn là vị trí -> chuyển thành Phục vụ + flag giữ xe
   if(r.settings.positions.includes('Giữ xe')){
