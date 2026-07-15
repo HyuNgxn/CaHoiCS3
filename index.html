@@ -209,6 +209,13 @@
 
   .toast{position:fixed;left:50%;bottom:calc(var(--safe-b) + 90px);transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;font-size:14px;font-weight:600;z-index:80;opacity:0;transition:.25s;pointer-events:none;box-shadow:var(--shadow)}
   .toast.show{opacity:1;transform:translateX(-50%)}
+  .req-tbl{width:100%;border-collapse:collapse}
+  .req-tbl th{font-size:12px;color:var(--muted);font-weight:700;padding:0 4px 8px;text-align:center}
+  .req-tbl th:first-child{text-align:left}
+  .req-tbl td{padding:4px}
+  .req-tbl td.rq-per{font-size:13.5px;font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:6px;height:48px}
+  .req-tbl .rq-in{width:100%;min-width:52px;height:44px;text-align:center;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-weight:700;font-size:16px}
+  .req-tbl .rq-in:focus{outline:none;border-color:var(--brand);background:#fff}
   .danger-text{color:var(--danger)}
   .link{color:var(--brand);font-weight:700}
   hr.sep{border:0;border-top:1px solid var(--line);margin:14px 0}
@@ -256,15 +263,21 @@ const STORE_KEY = 'xepca_v1';
 /* ---------- default data ---------- */
 function defaultData(){
   return {
-    settings:{ branch:'Cơ sở 3', minPerShift:1, positions:['Pha chế','Thu ngân','Phục vụ'] },
+    settings:{
+      branch:'Cơ sở 3',
+      positions:['Pha chế','Phục vụ','Giữ xe'],
+      // định mức người mỗi ca (period) theo từng vị trí
+      req:{
+        m:{'Pha chế':2,'Phục vụ':3,'Giữ xe':1},
+        a:{'Pha chế':2,'Phục vụ':2,'Giữ xe':1},
+        e:{'Pha chế':2,'Phục vụ':3,'Giữ xe':1}
+      }
+    },
     shiftTypes:[
-      {id:'s1', label:'7h-12h',    hours:5},
-      {id:'s2', label:'7h-12h30',  hours:5.5},
-      {id:'s3', label:'7h-17h30',  hours:10.5},
-      {id:'s4', label:'12h30-17h30',hours:5},
-      {id:'s5', label:'17h30-00h', hours:6.5},
-      {id:'s6', label:'19h-00h',   hours:5},
-      {id:'s7', label:'12h30-00h', hours:11.5}
+      {id:'s1', label:'7h-12h30',  hours:5.5},
+      {id:'s2', label:'12h30-17h30',hours:5},
+      {id:'s3', label:'17h30-00h', hours:6.5},
+      {id:'s4', label:'19h-00h',   hours:5}
     ],
     employees:[],            // {id,name,phone,rate,pos}
     schedule:{},             // weekKey -> empId -> dayIdx -> [ {typeId,pos} ]
@@ -275,8 +288,24 @@ function defaultData(){
 
 let DB = load();
 function load(){
-  try{ const r=JSON.parse(localStorage.getItem(STORE_KEY)); if(r&&r.settings) return r; }catch(e){}
+  try{
+    const r=JSON.parse(localStorage.getItem(STORE_KEY));
+    if(r&&r.settings){ return migrate(r); }
+  }catch(e){}
   return defaultData();
+}
+function migrate(r){
+  const d=defaultData();
+  r.settings=r.settings||{};
+  if(!r.settings.positions||!r.settings.positions.length) r.settings.positions=d.settings.positions;
+  if(!r.settings.req) r.settings.req=d.settings.req;
+  r.shiftTypes=r.shiftTypes||d.shiftTypes;
+  r.employees=r.employees||[];
+  r.schedule=r.schedule||{};
+  r.leaves=r.leaves||[];
+  r.early=r.early||[];
+  r.availability=r.availability||{};   // weekKey -> empId -> {dayIdx:[periodKeys]}
+  return r;
 }
 function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(DB)); }
 function uid(){ return Math.random().toString(36).slice(2,9); }
@@ -315,6 +344,12 @@ function shiftClass(st){ // color class by span
   if(cov.length>=2) return 'full';
   if(cov.length===1) return cov[0];
   return 'off';
+}
+// khung giờ chuẩn cho một buổi (dùng khi nhập đăng ký): chọn ca phủ đúng buổi đó, dài nhất
+function canonicalShiftFor(pk){
+  const cands=DB.shiftTypes.filter(t=>{const c=coveredPeriods(t);return c.length===1&&c[0]===pk;});
+  if(!cands.length){ const any=DB.shiftTypes.filter(t=>coveredPeriods(t).includes(pk)); if(any.length) return any.sort((a,b)=>b.hours-a.hours)[0]; return null; }
+  return cands.sort((a,b)=>b.hours-a.hours)[0];
 }
 function typeById(id){return DB.shiftTypes.find(s=>s.id===id);}
 function empById(id){return DB.employees.find(e=>e.id===id);}
@@ -432,17 +467,30 @@ function renderToday(){
   }
   el.innerHTML=html;
 }
+// đếm số người theo vị trí trong một buổi của một ngày -> {role:count}
+function staffCount(mon,dayIdx,pk){
+  const m={};
+  DB.employees.forEach(e=>{
+    cellShifts(mon,e.id,dayIdx).forEach(c=>{
+      const t=typeById(c.typeId);
+      if(t&&coveredPeriods(t).includes(pk)){ const r=c.pos||'(chưa rõ)'; m[r]=(m[r]||0)+1; }
+    });
+  });
+  return m;
+}
 function dayWarnings(mon,dayIdx,dateStr){
   const w=[];
-  // understaffed per period
   PERIODS.forEach(p=>{
-    let cnt=0;
-    DB.employees.forEach(e=>{
-      if(cellShifts(mon,e.id,dayIdx).some(c=>{const t=typeById(c.typeId);return t&&coveredPeriods(t).includes(p.key);})) cnt++;
+    const req=DB.settings.req[p.key]||{};
+    const have=staffCount(mon,dayIdx,p.key);
+    // chỉ báo khi buổi này đã có người (đã xếp) nhưng thiếu vị trí nào đó
+    const total=Object.values(have).reduce((a,b)=>a+b,0);
+    if(!total) return;
+    Object.keys(req).forEach(role=>{
+      const need=req[role], got=have[role]||0;
+      if(got<need) w.push(`Ca <b>${p.name}</b> thiếu <b>${role}</b>: ${got}/${need}.`);
     });
-    if(cnt>0 && cnt<DB.settings.minPerShift) w.push(`Ca <b>${p.name}</b> chỉ có ${cnt}/${DB.settings.minPerShift} người.`);
   });
-  // scheduled while on leave
   DB.employees.forEach(e=>{
     if(onLeave(dateStr,e.id) && cellShifts(mon,e.id,dayIdx).length)
       w.push(`<b>${e.name}</b> đã xin nghỉ nhưng vẫn được xếp ca.`);
@@ -529,7 +577,10 @@ function renderWeek(){
     <button class="btn ghost" id="btnCopy"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Chép tuần trước</button>
     <button class="btn ghost" id="btnSwap"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>Đổi ca</button>
   </div>
-  <button class="btn wide" id="btnExport" style="margin-top:10px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>Xuất ảnh gửi Zalo</button>`;
+  <button class="btn wide" id="btnImport" style="margin-top:10px;background:#2E7D5B"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg>Nhập đăng ký (Google Sheet)</button>
+  <button class="btn wide" id="btnExport" style="margin-top:10px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>Xuất ảnh gửi Zalo</button>
+  <input type="file" id="importFile" accept=".csv,text/csv,application/vnd.ms-excel" style="display:none">
+  <p style="text-align:center;margin:12px 0 0;font-size:13px"><a class="link" href="DangKyCa-CoSo3.xlsx" download>⬇︎ Tải file mẫu đăng ký</a> <span class="muted">· mở bằng Google Sheet, chia sẻ cho NV điền</span></p>`;
 
   el.innerHTML=html;
   bindWeekNav();
@@ -537,6 +588,8 @@ function renderWeek(){
   document.getElementById('btnCopy').onclick=copyPrevWeek;
   document.getElementById('btnSwap').onclick=()=>{swapMode=true;swapSel=null;renderWeek();};
   document.getElementById('btnExport').onclick=exportWeekImage;
+  document.getElementById('btnImport').onclick=()=>document.getElementById('importFile').click();
+  document.getElementById('importFile').onchange=onImportFile;
   if(swapMode) document.getElementById('swapCancel').onclick=()=>{swapMode=false;swapSel=null;renderWeek();};
 }
 function fmtH(h){ return (Number.isInteger(h)?h:h.toFixed(1))+'h'; }
@@ -579,17 +632,22 @@ function copyPrevWeek(){
   save(); toast('Đã chép lịch tuần trước'); renderWeek();
 }
 function weekWarnings(mon){
-  const w=[]; const min=DB.settings.minPerShift;
+  const w=[];
   for(let d=0;d<7;d++){
     const ds=ymd(addDays(mon,d));
     PERIODS.forEach(p=>{
-      let cnt=0;
-      DB.employees.forEach(e=>{ if(cellShifts(mon,e.id,d).some(c=>{const t=typeById(c.typeId);return t&&coveredPeriods(t).includes(p.key);})) cnt++; });
-      if(cnt>0&&cnt<min) w.push(`<b>${DOW[d]}</b> ca ${p.name}: ${cnt}/${min} người.`);
+      const req=DB.settings.req[p.key]||{};
+      const have=staffCount(mon,d,p.key);
+      const total=Object.values(have).reduce((a,b)=>a+b,0);
+      if(!total) return;
+      Object.keys(req).forEach(role=>{
+        const need=req[role], got=have[role]||0;
+        if(got<need) w.push(`<b>${DOW[d]}</b> ca ${p.name} thiếu ${role}: ${got}/${need}.`);
+      });
     });
     DB.employees.forEach(e=>{ if(onLeave(ds,e.id)&&cellShifts(mon,e.id,d).length) w.push(`<b>${DOW[d]}</b>: ${e.name} xin nghỉ nhưng vẫn có ca.`); });
   }
-  return w.slice(0,8);
+  return w.slice(0,10);
 }
 
 /* ---------- cell editor sheet ---------- */
@@ -655,6 +713,141 @@ function drawCellSheet(e,date,leave){
 }
 function commitCell(){
   setCell(curMonday,sheetState.empId,sheetState.day,sheetState.draft.map(c=>({...c})));
+}
+
+/* ============================================================
+   NHẬP ĐĂNG KÝ CA (từ Google Sheet xuất CSV)
+   ============================================================ */
+function noAccent(s){return String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').toLowerCase().trim();}
+function parseCSV(text){
+  text=text.replace(/^﻿/,''); const rows=[]; let row=[],cur='',q=false;
+  for(let i=0;i<text.length;i++){const ch=text[i];
+    if(q){ if(ch==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=ch; }
+    else{ if(ch==='"')q=true; else if(ch===','){row.push(cur);cur='';} else if(ch==='\n'){row.push(cur);rows.push(row);row=[];cur='';} else if(ch==='\r'){} else cur+=ch; }
+  }
+  if(cur.length||row.length){row.push(cur);rows.push(row);}
+  return rows;
+}
+const DOW_TOKEN={t2:0,t3:1,t4:2,t5:3,t6:4,t7:5,cn:6};
+function colMeta(header){
+  const h=noAccent(header);
+  let day=null; const dm=h.match(/\b(t[2-7]|cn)\b/); if(dm) day=DOW_TOKEN[dm[1]];
+  let pk=null; if(/sang/.test(h))pk='m'; else if(/chieu/.test(h))pk='a'; else if(/toi/.test(h))pk='e';
+  return (day!=null&&pk)?{day,pk}:null;
+}
+function isClaimed(v){ const n=noAccent(v); return n!=='' && !['0','off','nghi','x0','-'].includes(n); }
+function matchRole(v){
+  const n=noAccent(v);
+  const found=DB.settings.positions.find(p=>noAccent(p)===n);
+  if(found)return found;
+  if(/pha\s*che/.test(n))return 'Pha chế';
+  if(/giu\s*xe/.test(n))return 'Giữ xe';
+  if(/phuc\s*vu/.test(n))return 'Phục vụ';
+  return v.trim()||'Phục vụ';
+}
+function onImportFile(ev){
+  const f=ev.target.files[0]; if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{ try{ processRegistration(rd.result); }catch(e){ alert('Không đọc được file này. Hãy chắc bạn đã tải Google Sheet ở dạng CSV.\n\n('+e.message+')'); } };
+  rd.readAsText(f,'utf-8');
+  ev.target.value='';
+}
+function processRegistration(text){
+  const rows=parseCSV(text).filter(r=>r.some(c=>c&&c.trim()!==''));
+  // tìm dòng tiêu đề (ô đầu là "Tên")
+  let hi=rows.findIndex(r=>['ten','ho ten','ho va ten'].includes(noAccent(r[0]||'')));
+  if(hi<0) throw new Error('Không thấy cột "Tên"');
+  const header=rows[hi];
+  // vị trí cột "Vị trí"
+  let roleCol=header.findIndex(c=>/vi\s*tri/.test(noAccent(c)));
+  if(roleCol<0) roleCol=1;
+  const metas=header.map((h,i)=> (i<=Math.max(1,roleCol)?null:colMeta(h)) );
+  // gom đăng ký theo thứ tự dòng
+  const people=[];
+  for(let r=hi+1;r<rows.length;r++){
+    const row=rows[r]; const name=(row[0]||'').trim(); if(!name) continue;
+    const role=matchRole(row[roleCol]||'');
+    const claims=[];
+    metas.forEach((m,i)=>{ if(m && isClaimed(row[i]||'')) claims.push(m); });
+    if(claims.length) people.push({name,role,claims});
+  }
+  if(!people.length) throw new Error('Chưa có ai đăng ký ca trong file');
+  showImportPreview(people);
+}
+function showImportPreview(people){
+  const totalClaims=people.reduce((a,p)=>a+p.claims.length,0);
+  const mon=curMonday;
+  let html=`<div class="grip"></div><h2>Nhập đăng ký</h2>
+    <div class="sub">Tuần ${dmShort(mon)} – ${dmShort(addDays(mon,6))} · ${people.length} người · ${totalClaims} lượt đăng ký</div>
+    <div class="swapbar" style="background:var(--brand-soft);border-color:#E7C9B2;color:var(--brand-ink)">
+      Ai đăng ký trước được ưu tiên. Lượt vượt định mức sẽ bị bỏ (báo bên dưới).</div>
+    <div class="existing" style="max-height:34vh;overflow:auto">`;
+  people.forEach(p=>{ html+=`<div class="exrow"><div class="av" style="width:30px;height:30px;font-size:12px;border-radius:50%;background:var(--brand-soft);color:var(--brand-ink);display:grid;place-items:center;font-weight:800">${initials(p.name)}</div>
+    <div><b>${esc(p.name)}</b><div class="muted" style="font-size:12px">${esc(p.role)} · ${p.claims.length} ca</div></div></div>`; });
+  html+=`</div>
+    <button class="btn wide" id="doImport" style="margin-top:12px">Xếp lịch tuần này theo đăng ký</button>
+    <button class="btn ghost wide" id="cancelImport" style="margin-top:10px">Huỷ</button>`;
+  document.getElementById('sheet').innerHTML=html;
+  document.getElementById('cancelImport').onclick=closeSheet;
+  document.getElementById('doImport').onclick=()=>applyRegistration(people);
+  openSheet();
+}
+function applyRegistration(people){
+  const mon=curMonday, wk=weekKey(mon);
+  // 1) khớp / tạo nhân viên
+  const created=[];
+  people.forEach(p=>{
+    let e=DB.employees.find(x=>noAccent(x.name)===noAccent(p.name));
+    if(!e){ e={id:uid(),name:p.name.trim(),rate:0,phone:'',pos:p.role}; DB.employees.push(e); created.push(e.name); }
+    p.empId=e.id;
+  });
+  // 2) duyệt theo thứ tự dòng, cấp chỗ theo định mức (điền trước nhận trước)
+  const counters={}; const overflow=[]; const grants={}; const avail={};
+  people.forEach(p=>{
+    avail[p.empId]=avail[p.empId]||{};
+    p.claims.forEach(c=>{
+      (avail[p.empId][c.day]=avail[p.empId][c.day]||[]).push(c.pk);
+      const need=(DB.settings.req[c.pk]||{})[p.role]||0;
+      const key=c.day+'|'+c.pk+'|'+p.role;
+      const used=counters[key]||0;
+      if(used<need){ counters[key]=used+1; (grants[p.empId]=grants[p.empId]||[]).push(c); }
+      else overflow.push({name:p.name,role:p.role,day:c.day,pk:c.pk});
+    });
+  });
+  // 3) ghi lịch (thay lịch tuần hiện tại)
+  const newWeek={};
+  Object.keys(grants).forEach(empId=>{
+    newWeek[empId]={};
+    grants[empId].forEach(c=>{
+      const t=canonicalShiftFor(c.pk); if(!t)return;
+      const role=DB.employees.find(e=>e.id===empId).pos;
+      (newWeek[empId][c.day]=newWeek[empId][c.day]||[]).push({typeId:t.id,pos:role});
+    });
+  });
+  DB.schedule[wk]=newWeek;
+  DB.availability=DB.availability||{}; DB.availability[wk]=avail;
+  save();
+  closeSheet();
+  showImportResult(created,overflow);
+  renderWeek();
+}
+function pkName(pk){return PERIODS.find(p=>p.key===pk).name;}
+function showImportResult(created,overflow){
+  const mon=curMonday; const gaps=weekWarnings(mon).filter(w=>/thiếu/.test(w));
+  let html=`<div class="grip"></div><h2>✅ Đã xếp lịch</h2>
+    <div class="sub">Tuần ${dmShort(mon)} – ${dmShort(addDays(mon,6))}</div>`;
+  if(created.length) html+=`<div class="warnbox" style="background:#E7F3EC;border-color:#BEE0CB"><h3 style="color:#1f7a4d">Đã thêm ${created.length} nhân viên mới</h3><ul>${created.map(n=>`<li style="color:#256b45">${esc(n)} — nhớ vào tab Nhân viên đặt lương/giờ</li>`).join('')}</ul></div>`;
+  if(overflow.length){
+    html+=`<div class="warnbox"><h3>⚠️ ${overflow.length} lượt bị bỏ (vượt định mức — điền sau)</h3><ul>${overflow.map(o=>`<li><b>${esc(o.name)}</b> · ${o.role} · ${DOW[o.day]} ${pkName(o.pk)}</li>`).join('')}</ul><p style="font-size:12.5px;margin:6px 0 0;color:#7d2622">Báo các bạn này chọn ca/buổi khác.</p></div>`;
+  }
+  if(gaps.length){
+    html+=`<div class="warnbox" style="background:#FFF4E0;border-color:#F0D9A8"><h3 style="color:#9a6a10">Còn thiếu người</h3><ul>${gaps.map(g=>`<li style="color:#7a5410">${g}</li>`).join('')}</ul></div>`;
+  }
+  if(!overflow.length&&!gaps.length) html+=`<div class="empty" style="padding:20px"><div class="big">🎉</div>Lịch đủ người, không có ai bị trùng!</div>`;
+  html+=`<button class="btn wide" id="okImport" style="margin-top:12px">Xem lịch tuần</button>`;
+  document.getElementById('sheet').innerHTML=html;
+  document.getElementById('okImport').onclick=closeSheet;
+  openSheet();
 }
 
 /* ---------- export week as image ---------- */
@@ -895,10 +1088,12 @@ function renderSettings(){
       <div class="field" style="margin:0"><label>Tên cơ sở</label><input id="setBranch" value="${esc(DB.settings.branch||'')}"></div>
     </div>
 
-    <div class="sec-title">Xếp ca</div>
+    <div class="sec-title">Định mức người mỗi ca</div>
     <div class="card pad">
-      <div class="field" style="margin:0"><label>Số người tối thiểu mỗi ca (để cảnh báo thiếu người)</label>
-      <input id="setMin" inputmode="numeric" value="${DB.settings.minPerShift}"></div>
+      <p class="muted" style="margin:0 0 12px;font-size:13px">Số người cần cho mỗi buổi theo từng vị trí. Dùng để cảnh báo thiếu người và chia chỗ khi nhập đăng ký.</p>
+      <table class="req-tbl"><thead><tr><th></th>${DB.settings.positions.map(p=>`<th>${esc(p)}</th>`).join('')}</tr></thead><tbody>
+      ${PERIODS.map(p=>`<tr><td class="rq-per"><span class="dot c-${p.cls}"></span>${p.name}</td>${DB.settings.positions.map(role=>`<td><input class="rq-in" inputmode="numeric" data-pk="${p.key}" data-role="${esc(role)}" value="${(DB.settings.req[p.key]||{})[role]||0}"></td>`).join('')}</tr>`).join('')}
+      </tbody></table>
     </div>
 
     <div class="sec-title">Khung giờ ca &amp; số giờ</div>
@@ -932,8 +1127,13 @@ function renderSettings(){
   el.innerHTML=html;
 
   document.getElementById('setBranch').onchange=ev=>{DB.settings.branch=ev.target.value.trim()||'Cơ sở 3';save();render();};
-  document.getElementById('setMin').onchange=ev=>{DB.settings.minPerShift=Math.max(0,parseInt(ev.target.value)||0);save();};
-  document.getElementById('setPos').onchange=ev=>{const arr=ev.target.value.split(',').map(s=>s.trim()).filter(Boolean);if(arr.length){DB.settings.positions=arr;save();}};
+  document.querySelectorAll('.rq-in').forEach(inp=>inp.onchange=ev=>{
+    const pk=ev.target.dataset.pk, role=ev.target.dataset.role;
+    DB.settings.req[pk]=DB.settings.req[pk]||{};
+    DB.settings.req[pk][role]=Math.max(0,parseInt(ev.target.value)||0);
+    save();
+  });
+  document.getElementById('setPos').onchange=ev=>{const arr=ev.target.value.split(',').map(s=>s.trim()).filter(Boolean);if(arr.length){DB.settings.positions=arr;save();render();}};
   document.querySelectorAll('[data-editshift]').forEach(b=>b.onclick=()=>openShiftTypeSheet(b.dataset.editshift));
   document.getElementById('addShiftType').onclick=()=>openShiftTypeSheet();
   document.getElementById('btnBackup').onclick=backup;

@@ -1,2 +1,5 @@
 XepCa-app.zip
 *.zip
+_*.csv
+_*.txt
+_dump.json
