@@ -9,9 +9,9 @@ from openpyxl.formatting.rule import FormulaRule
 DOW   = ['T2','T3','T4','T5','T6','T7','CN']
 PERS  = [('Sáng','m'), ('Chiều','a'), ('Tối','e')]
 QUOTA = {
-    'm': {'Pha chế':2, 'Phục vụ':3, 'Giữ xe':1},
-    'a': {'Pha chế':2, 'Phục vụ':2, 'Giữ xe':1},
-    'e': {'Pha chế':2, 'Phục vụ':3, 'Giữ xe':1},
+    'm': {'Pha chế':2, 'Phục vụ':3},
+    'a': {'Pha chế':2, 'Phục vụ':2},
+    'e': {'Pha chế':2, 'Phục vụ':3},
 }
 NDATA = 16          # số dòng nhân viên
 HR    = 4           # dòng tiêu đề bảng
@@ -39,7 +39,7 @@ ws['A1'].font = Font(size=16, bold=True, color=BRAND)
 ws['A2'] = ('Điền chữ  x  vào buổi bạn ĐI LÀM ĐƯỢC. Ai điền trước được ưu tiên. '
             'Ô chuyển ĐỎ = buổi đó đã đủ người → hãy chọn buổi/ngày khác. Ô XANH = đã nhận chỗ.')
 ws['A2'].font = Font(size=10, italic=True, color='6B5B4C')
-ws['A3'] = 'Định mức mỗi buổi:  Pha chế 2  ·  Phục vụ 2–3  ·  Giữ xe 1'
+ws['A3'] = 'Định mức mỗi buổi:  Pha chế 2  ·  Phục vụ 2–3   (người giữ xe do chủ quán chọn trong app)'
 ws['A3'].font = Font(size=10, bold=True, color='6B5B4C')
 
 # ---- hàng tiêu đề bảng ----
@@ -78,7 +78,7 @@ for r in range(DR, LR+1):
         cell.fill = PatternFill('solid', fgColor=(TAN_A if d % 2 else TAN_B))
 
 # ---- data validation ----
-dv_role = DataValidation(type='list', formula1='"Pha chế,Phục vụ,Giữ xe"', allow_blank=True)
+dv_role = DataValidation(type='list', formula1='"Pha chế,Phục vụ"', allow_blank=True)
 ws.add_data_validation(dv_role); dv_role.add(f'B{DR}:B{LR}')
 dv_x = DataValidation(type='list', formula1='"x"', allow_blank=True)
 ws.add_data_validation(dv_x)
@@ -91,8 +91,7 @@ for (d,pk), c in claim_cols.items():
     L = get_column_letter(c)
     q = QUOTA[pk]
     qexpr = (f'IF($B{DR}="Pha chế",{q["Pha chế"]},'
-             f'IF($B{DR}="Phục vụ",{q["Phục vụ"]},'
-             f'IF($B{DR}="Giữ xe",{q["Giữ xe"]},99)))')
+             f'IF($B{DR}="Phục vụ",{q["Phục vụ"]},99))')
     run = f'COUNTIFS($B${DR}:$B{DR},$B{DR},{L}${DR}:{L}{DR},"x")'
     rng = f'{L}{DR}:{L}{LR}'
     over  = f'AND({L}{DR}="x",{run}>{qexpr})'
@@ -119,7 +118,7 @@ for i,h in enumerate(heads,1):
     cc = ws2.cell(4,i,h); cc.font = Font(bold=True, color=HEADTXT)
     cc.fill = PatternFill('solid', fgColor=CREAM); cc.border = border
     cc.alignment = Alignment(horizontal='center')
-roles = ['Pha chế','Phục vụ','Giữ xe']
+roles = ['Pha chế','Phục vụ']
 r2 = 5
 red2 = PatternFill('solid', fgColor=RED)
 for d,dow in enumerate(DOW):
