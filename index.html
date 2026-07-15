@@ -1249,8 +1249,23 @@ function money(n){return Math.round(n).toLocaleString('vi-VN')+'đ';}
 function fmtDate(s){const d=parseYMD(s);return `${DOW[(d.getDay()+6)%7]} ${dmShort(d)}`;}
 function fmtRange(a,b){if(!b||b===a)return fmtDate(a);return `${dmShort(parseYMD(a))} → ${dmShort(parseYMD(b))}`;}
 
-/* ---------- service worker ---------- */
-if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+/* ---------- service worker + tự cập nhật ---------- */
+if('serviceWorker' in navigator){
+  let refreshing=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(refreshing)return; refreshing=true; location.reload();
+  });
+  navigator.serviceWorker.register('sw.js').then(reg=>{
+    reg.addEventListener('updatefound',()=>{
+      const nw=reg.installing;
+      nw&&nw.addEventListener('statechange',()=>{
+        if(nw.state==='installed'&&navigator.serviceWorker.controller) nw.postMessage&&0; // bản mới sẵn sàng
+      });
+    });
+    // kiểm tra bản mới mỗi khi mở lại app
+    if(reg.update) reg.update();
+  }).catch(()=>{});
+}
 
 /* ---------- go ---------- */
 go('week');
