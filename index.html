@@ -990,6 +990,8 @@ function runAutoSchedule(mon){
   const newWeek={}; const gaps=[];
   const isFree=(id,d,pk)=> avail[id] && avail[id][d] && avail[id][d].includes(pk);
   const busyPeriod=(id,d,pk)=> (newWeek[id]&&newWeek[id][d]||[]).some(c=>coveredPeriods(typeById(c.typeId)).includes(pk));
+  // hôm qua có làm ca tối không (để tránh tối -> sáng hôm sau)
+  const lateYesterday=(id,d)=> d>0 && (newWeek[id]&&newWeek[id][d-1]||[]).some(c=>coveredPeriods(typeById(c.typeId)).includes('e'));
   for(let d=0; d<7; d++){
     const ds=ymd(addDays(mon,d));
     PERIODS.forEach(p=>{
@@ -999,8 +1001,12 @@ function runAutoSchedule(mon){
         for(let k=0;k<need;k++){
           const cands=DB.employees.filter(e=> e.pos===role && !onLeave(ds,e.id) && isFree(e.id,d,p.key) && !busyPeriod(e.id,d,p.key));
           if(!cands.length) break;
-          // ưu tiên: người chưa đủ ca tối thiểu -> người đang ít ca nhất
-          cands.sort((a,b)=>{ const am=load[a.id]<minS?0:1, bm=load[b.id]<minS?0:1; if(am!==bm)return am-bm; return load[a.id]-load[b.id]; });
+          // ưu tiên: tránh vừa ca tối hôm qua -> chưa đủ ca tối thiểu -> ít ca nhất
+          cands.sort((a,b)=>{
+            if(p.key==='m'){ const ar=lateYesterday(a.id,d)?1:0, br=lateYesterday(b.id,d)?1:0; if(ar!==br)return ar-br; }
+            const am=load[a.id]<minS?0:1, bm=load[b.id]<minS?0:1; if(am!==bm)return am-bm;
+            return load[a.id]-load[b.id];
+          });
           const pick=cands[0]; const t=canonicalShiftFor(p.key);
           newWeek[pick.id]=newWeek[pick.id]||{}; (newWeek[pick.id][d]=newWeek[pick.id][d]||[]).push({typeId:t.id,pos:role});
           load[pick.id]++; filled++;
