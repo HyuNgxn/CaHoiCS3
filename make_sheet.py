@@ -34,12 +34,12 @@ ws = wb.active
 ws.title = 'Đăng ký'
 
 # ---- tiêu đề & hướng dẫn ----
-ws['A1'] = 'ĐĂNG KÝ CA LÀM — CƠ SỞ 3'
+ws['A1'] = 'ĐĂNG KÝ BUỔI RẢNH — CƠ SỞ 3'
 ws['A1'].font = Font(size=16, bold=True, color=BRAND)
-ws['A2'] = ('Điền chữ  x  vào buổi bạn ĐI LÀM ĐƯỢC. Ai điền trước được ưu tiên. '
-            'Ô chuyển ĐỎ = buổi đó đã đủ người → hãy chọn buổi/ngày khác. Ô XANH = đã nhận chỗ.')
+ws['A2'] = ('Điền chữ  x  vào MỌI buổi bạn ĐI LÀM ĐƯỢC (rảnh). Càng đăng ký nhiều buổi rảnh, '
+            'càng dễ được xếp đủ ca. App sẽ tự chia cân bằng và ưu tiên người ít ca — không phải ai điền trước.')
 ws['A2'].font = Font(size=10, italic=True, color='6B5B4C')
-ws['A3'] = 'Định mức mỗi buổi:  Pha chế 2  ·  Phục vụ 2–3   (người giữ xe do chủ quán chọn trong app)'
+ws['A3'] = 'Ô XANH = đã đăng ký rảnh.  Người giữ xe do chủ quán chọn trong app.'
 ws['A3'].font = Font(size=10, bold=True, color='6B5B4C')
 
 # ---- hàng tiêu đề bảng ----
@@ -84,20 +84,12 @@ dv_x = DataValidation(type='list', formula1='"x"', allow_blank=True)
 ws.add_data_validation(dv_x)
 dv_x.add(f'{get_column_letter(3)}{DR}:{get_column_letter(last_col)}{LR}')
 
-# ---- conditional formatting: đỏ khi vượt định mức (theo thứ tự điền), xanh khi hợp lệ ----
-red_fill   = PatternFill('solid', fgColor=RED)
+# ---- conditional formatting: xanh khi đã tick rảnh ----
 green_fill = PatternFill('solid', fgColor=GREEN)
 for (d,pk), c in claim_cols.items():
     L = get_column_letter(c)
-    q = QUOTA[pk]
-    qexpr = (f'IF($B{DR}="Pha chế",{q["Pha chế"]},'
-             f'IF($B{DR}="Phục vụ",{q["Phục vụ"]},99))')
-    run = f'COUNTIFS($B${DR}:$B{DR},$B{DR},{L}${DR}:{L}{DR},"x")'
     rng = f'{L}{DR}:{L}{LR}'
-    over  = f'AND({L}{DR}="x",{run}>{qexpr})'
-    okok  = f'AND({L}{DR}="x",{run}<={qexpr})'
-    ws.conditional_formatting.add(rng, FormulaRule(formula=[over], fill=red_fill, stopIfTrue=True))
-    ws.conditional_formatting.add(rng, FormulaRule(formula=[okok], fill=green_fill))
+    ws.conditional_formatting.add(rng, FormulaRule(formula=[f'LOWER({L}{DR})="x"'], fill=green_fill))
 
 # ---- kích thước cột / freeze ----
 ws.column_dimensions['A'].width = 16
@@ -107,13 +99,13 @@ for cc in range(3, last_col+1):
 ws.row_dimensions[HR].height = 30
 ws.freeze_panes = 'C5'
 
-# =============== Sheet 2: Còn chỗ (đếm trực tiếp) ===============
-ws2 = wb.create_sheet('Còn chỗ')
-ws2['A1'] = 'CÒN CHỖ MỖI BUỔI (tự cập nhật)'
+# =============== Sheet 2: Số bạn rảnh (đếm trực tiếp) ===============
+ws2 = wb.create_sheet('Số bạn rảnh')
+ws2['A1'] = 'SỐ BẠN RẢNH MỖI BUỔI (tự cập nhật)'
 ws2['A1'].font = Font(size=14, bold=True, color=BRAND)
-ws2['A2'] = 'Số đang có / định mức. Ô đỏ = đã đủ.'
+ws2['A2'] = 'Số bạn đăng ký rảnh / định mức cần. Ô ĐỎ = chưa đủ người rảnh → cần thêm bạn đăng ký buổi này.'
 ws2['A2'].font = Font(size=10, italic=True, color='6B5B4C')
-heads = ['Ngày','Buổi','Pha chế','Phục vụ','Giữ xe']
+heads = ['Ngày','Buổi','Pha chế','Phục vụ']
 for i,h in enumerate(heads,1):
     cc = ws2.cell(4,i,h); cc.font = Font(bold=True, color=HEADTXT)
     cc.fill = PatternFill('solid', fgColor=CREAM); cc.border = border
@@ -132,15 +124,15 @@ for d,dow in enumerate(DOW):
                  f'\'Đăng ký\'!{L}${DR}:{L}${LR},"x")&"/{q}"')
             cell = ws2.cell(r2, 3+ri, f)
             cell.alignment = Alignment(horizontal='center'); cell.border = border
-            # đỏ khi đủ: count>=quota
+            # đỏ khi CHƯA đủ người rảnh: count < quota
             cnt = (f'COUNTIFS(\'Đăng ký\'!$B${DR}:$B${LR},"{role}",'
                    f'\'Đăng ký\'!{L}${DR}:{L}${LR},"x")')
             ws2.conditional_formatting.add(
-                cell.coordinate, FormulaRule(formula=[f'{cnt}>={q}'], fill=red2))
+                cell.coordinate, FormulaRule(formula=[f'{cnt}<{q}'], fill=red2))
         for i in (1,2):
             ws2.cell(r2,i).border = border
         r2 += 1
-for i,w in enumerate([6,8,10,10,10],1):
+for i,w in enumerate([6,8,11,11],1):
     ws2.column_dimensions[get_column_letter(i)].width = w
 ws2.freeze_panes = 'A5'
 

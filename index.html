@@ -290,6 +290,7 @@ function defaultData(){
     settings:{
       branch:'Cơ sở 3',
       sheetUrl:'https://docs.google.com/spreadsheets/d/1ZWwDEWoZyhM9c6yfVPTTnHj5649NDkrtp1yrVUy-fDA/edit?gid=1611437518',
+      minShifts:0,                        // số ca tối thiểu mỗi người/tuần (0 = tắt)
       positions:['Pha chế','Phục vụ'],   // Giữ xe là 1 phục vụ được đánh dấu (flag bike)
       // định mức người mỗi ca (period) theo từng vị trí
       req:{
@@ -325,6 +326,7 @@ function migrate(r){
   if(!r.settings.positions||!r.settings.positions.length) r.settings.positions=d.settings.positions;
   if(!r.settings.req) r.settings.req=d.settings.req;
   if(r.settings.sheetUrl==null) r.settings.sheetUrl='';
+  if(r.settings.minShifts==null) r.settings.minShifts=0;
   // Giữ xe không còn là vị trí -> chuyển thành Phục vụ + flag giữ xe
   if(r.settings.positions.includes('Giữ xe')){
     r.settings.positions=r.settings.positions.filter(p=>p!=='Giữ xe');
@@ -579,13 +581,16 @@ function renderWeek(){
   });
 
   // actions
-  html+=`<button class="btn ghost wide" id="btnCopy" style="margin-top:16px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Chép lịch tuần trước</button>
+  const hasAvail=DB.availability&&DB.availability[weekKey(mon)]&&Object.keys(DB.availability[weekKey(mon)]).length;
+  if(hasAvail) html+=`<button class="btn wide" id="btnAuto" style="margin-top:16px;background:#2E7D5B"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/></svg>Tự xếp lại ca (cân bằng)</button>`;
+  html+=`<button class="btn ghost wide" id="btnCopy" style="margin-top:${hasAvail?10:16}px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Chép lịch tuần trước</button>
   <button class="btn wide" id="btnExport" style="margin-top:10px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>Xuất ảnh gửi Zalo</button>`;
   html+=importActionsHTML();
 
   el.innerHTML=html;
   bindWeekNav(); bindDaySel(); bindImportActions();
   bindRoster();
+  const ba=document.getElementById('btnAuto'); if(ba) ba.onclick=autoScheduleBtn;
   document.getElementById('btnCopy').onclick=copyPrevWeek;
   document.getElementById('btnExport').onclick=exportWeekImage;
 }
@@ -636,15 +641,23 @@ function bindRoster(){
 }
 /* --- thêm người vào 1 buổi + vị trí --- */
 function openAddSheet(day,pk,role){
-  const mon=curMonday; const canon=canonicalShiftFor(pk);
+  const mon=curMonday; const canon=canonicalShiftFor(pk); const wk=weekKey(mon);
   const p=PERIODS.find(x=>x.key===pk);
+  const av=(DB.availability&&DB.availability[wk])||{};
+  const isFree=id=> av[id] && av[id][day] && av[id][day].includes(pk);
   // ai chưa có ca phủ buổi này
-  const avail=DB.employees.filter(e=>!cellShifts(mon,e.id,day).some(c=>{const t=typeById(c.typeId);return t&&coveredPeriods(t).includes(pk);}));
+  let list=DB.employees.filter(e=>!cellShifts(mon,e.id,day).some(c=>{const t=typeById(c.typeId);return t&&coveredPeriods(t).includes(pk);}));
+  // xếp: đúng vị trí + đã đăng ký rảnh lên đầu
+  list.sort((a,b)=>{
+    const af=(isFree(a.id)?0:1)+(a.pos===role?0:2), bf=(isFree(b.id)?0:1)+(b.pos===role?0:2);
+    return af-bf;
+  });
   let html=`<div class="grip"></div><h2>Thêm ${esc(role)} · Ca ${p.name}</h2><div class="sub">${DOW_FULL[(addDays(mon,day).getDay()+6)%7]}, ${dmShort(addDays(mon,day))} · ${canon?canon.label:''}</div>`;
-  if(!avail.length) html+=`<div class="empty" style="padding:18px">Mọi nhân viên đều đã có ca buổi này.</div>`;
-  else{ html+=`<div class="existing">`+avail.map(e=>{
-      const leave=onLeave(ymd(addDays(mon,day)),e.id);
-      return `<button class="exrow" data-pick="${e.id}" style="width:100%;text-align:left"><div class="av" style="width:32px;height:32px;font-size:12px;border-radius:50%;background:var(--brand-soft);color:var(--brand-ink);display:grid;place-items:center;font-weight:800">${initials(e.name)}</div><div><b>${esc(e.name)}</b>${leave?'<div class="danger-text" style="font-size:12px">🌙 đã xin nghỉ</div>':(e.pos?`<div class="muted" style="font-size:12px">${esc(e.pos)}</div>`:'')}</div></button>`;
+  if(!list.length) html+=`<div class="empty" style="padding:18px">Mọi nhân viên đều đã có ca buổi này.</div>`;
+  else{ html+=`<div class="existing">`+list.map(e=>{
+      const leave=onLeave(ymd(addDays(mon,day)),e.id); const free=isFree(e.id);
+      const sub=leave?'<span class="danger-text">🌙 đã xin nghỉ</span>':(e.pos||'');
+      return `<button class="exrow" data-pick="${e.id}" style="width:100%;text-align:left"><div class="av" style="width:32px;height:32px;font-size:12px;border-radius:50%;background:${free?'#D8F0EC':'var(--brand-soft)'};color:var(--brand-ink);display:grid;place-items:center;font-weight:800">${initials(e.name)}</div><div style="flex:1"><b>${esc(e.name)}</b><div class="muted" style="font-size:12px">${sub}</div></div>${free?'<span class="pill bg-a">✓ rảnh</span>':''}</button>`;
     }).join('')+`</div>`; }
   document.getElementById('sheet').innerHTML=html;
   document.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{
@@ -931,15 +944,15 @@ function processRegistration(text){
 function showImportPreview(people){
   const totalClaims=people.reduce((a,p)=>a+p.claims.length,0);
   const mon=curMonday;
-  let html=`<div class="grip"></div><h2>Nhập đăng ký</h2>
-    <div class="sub">Tuần ${dmShort(mon)} – ${dmShort(addDays(mon,6))} · ${people.length} người · ${totalClaims} lượt đăng ký</div>
+  let html=`<div class="grip"></div><h2>Nhận đăng ký rảnh</h2>
+    <div class="sub">Tuần ${dmShort(mon)} – ${dmShort(addDays(mon,6))} · ${people.length} người · ${totalClaims} buổi rảnh</div>
     <div class="swapbar" style="background:var(--brand-soft);border-color:#E7C9B2;color:var(--brand-ink)">
-      Ai đăng ký trước được ưu tiên. Lượt vượt định mức sẽ bị bỏ (báo bên dưới).</div>
+      App sẽ tự xếp ca cân bằng từ các buổi rảnh (đủ định mức, chia đều, ưu tiên người ít ca). Bạn chỉnh tay được sau.</div>
     <div class="existing" style="max-height:34vh;overflow:auto">`;
   people.forEach(p=>{ html+=`<div class="exrow"><div class="av" style="width:30px;height:30px;font-size:12px;border-radius:50%;background:var(--brand-soft);color:var(--brand-ink);display:grid;place-items:center;font-weight:800">${initials(p.name)}</div>
-    <div><b>${esc(p.name)}</b><div class="muted" style="font-size:12px">${esc(p.role)} · ${p.claims.length} ca</div></div></div>`; });
+    <div><b>${esc(p.name)}</b><div class="muted" style="font-size:12px">${esc(p.role)} · rảnh ${p.claims.length} buổi</div></div></div>`; });
   html+=`</div>
-    <button class="btn wide" id="doImport" style="margin-top:12px">Xếp lịch tuần này theo đăng ký</button>
+    <button class="btn wide" id="doImport" style="margin-top:12px">Lưu đăng ký & tự xếp ca</button>
     <button class="btn ghost wide" id="cancelImport" style="margin-top:10px">Huỷ</button>`;
   document.getElementById('sheet').innerHTML=html;
   document.getElementById('cancelImport').onclick=closeSheet;
@@ -948,56 +961,72 @@ function showImportPreview(people){
 }
 function applyRegistration(people){
   const mon=curMonday, wk=weekKey(mon);
-  // 1) khớp / tạo nhân viên
+  // 1) khớp / tạo nhân viên (cập nhật vị trí theo form)
   const created=[];
   people.forEach(p=>{
     let e=DB.employees.find(x=>noAccent(x.name)===noAccent(p.name));
     if(!e){ e={id:uid(),name:p.name.trim(),rate:0,phone:'',pos:p.role}; DB.employees.push(e); created.push(e.name); }
+    else if(p.role) e.pos=p.role;
     p.empId=e.id;
   });
-  // 2) duyệt theo thứ tự dòng, cấp chỗ theo định mức (điền trước nhận trước)
-  const counters={}; const overflow=[]; const grants={}; const avail={};
-  people.forEach(p=>{
-    avail[p.empId]=avail[p.empId]||{};
-    p.claims.forEach(c=>{
-      (avail[p.empId][c.day]=avail[p.empId][c.day]||[]).push(c.pk);
-      const need=(DB.settings.req[c.pk]||{})[p.role]||0;
-      const key=c.day+'|'+c.pk+'|'+p.role;
-      const used=counters[key]||0;
-      if(used<need){ counters[key]=used+1; (grants[p.empId]=grants[p.empId]||[]).push(c); }
-      else overflow.push({name:p.name,role:p.role,day:c.day,pk:c.pk});
-    });
+  // 2) lưu buổi rảnh (availability) cho tuần
+  const avail={};
+  people.forEach(p=>{ avail[p.empId]=avail[p.empId]||{};
+    p.claims.forEach(c=>{ const arr=(avail[p.empId][c.day]=avail[p.empId][c.day]||[]); if(!arr.includes(c.pk)) arr.push(c.pk); });
   });
-  // 3) ghi lịch (thay lịch tuần hiện tại)
-  const newWeek={};
-  Object.keys(grants).forEach(empId=>{
-    newWeek[empId]={};
-    grants[empId].forEach(c=>{
-      const t=canonicalShiftFor(c.pk); if(!t)return;
-      const role=DB.employees.find(e=>e.id===empId).pos;
-      (newWeek[empId][c.day]=newWeek[empId][c.day]||[]).push({typeId:t.id,pos:role});
-    });
-  });
-  DB.schedule[wk]=newWeek;
   DB.availability=DB.availability||{}; DB.availability[wk]=avail;
   save();
+  // 3) tự xếp cân bằng ngay
+  const res=runAutoSchedule(mon);
   closeSheet();
-  showImportResult(created,overflow);
+  showScheduleResult({created, ...res});
   renderWeek();
 }
+/* ---------- thuật toán xếp ca cân bằng từ buổi rảnh ---------- */
+function runAutoSchedule(mon){
+  const wk=weekKey(mon); const avail=DB.availability[wk]||{};
+  const load={}; DB.employees.forEach(e=>load[e.id]=0);
+  const minS=DB.settings.minShifts||0;
+  const newWeek={}; const gaps=[];
+  const isFree=(id,d,pk)=> avail[id] && avail[id][d] && avail[id][d].includes(pk);
+  const busyPeriod=(id,d,pk)=> (newWeek[id]&&newWeek[id][d]||[]).some(c=>coveredPeriods(typeById(c.typeId)).includes(pk));
+  for(let d=0; d<7; d++){
+    const ds=ymd(addDays(mon,d));
+    PERIODS.forEach(p=>{
+      const req=DB.settings.req[p.key]||{};
+      DB.settings.positions.forEach(role=>{
+        const need=req[role]||0; let filled=0;
+        for(let k=0;k<need;k++){
+          const cands=DB.employees.filter(e=> e.pos===role && !onLeave(ds,e.id) && isFree(e.id,d,p.key) && !busyPeriod(e.id,d,p.key));
+          if(!cands.length) break;
+          // ưu tiên: người chưa đủ ca tối thiểu -> người đang ít ca nhất
+          cands.sort((a,b)=>{ const am=load[a.id]<minS?0:1, bm=load[b.id]<minS?0:1; if(am!==bm)return am-bm; return load[a.id]-load[b.id]; });
+          const pick=cands[0]; const t=canonicalShiftFor(p.key);
+          newWeek[pick.id]=newWeek[pick.id]||{}; (newWeek[pick.id][d]=newWeek[pick.id][d]||[]).push({typeId:t.id,pos:role});
+          load[pick.id]++; filled++;
+        }
+        if(filled<need) gaps.push({day:d,pk:p.key,role,filled,need});
+      });
+    });
+  }
+  DB.schedule[wk]=newWeek; save();
+  const under=DB.employees.filter(e=>minS>0 && load[e.id]<minS).map(e=>({name:e.name,got:load[e.id]}));
+  return {gaps, under, load, minS};
+}
+function autoScheduleBtn(){
+  const mon=curMonday, wk=weekKey(mon);
+  if(!DB.availability||!DB.availability[wk]||!Object.keys(DB.availability[wk]).length){ toast('Chưa có đăng ký rảnh — Nhập/Đồng bộ trước'); return; }
+  if(!confirm('Tự xếp lại lịch tuần này từ đăng ký rảnh? Các chỉnh tay hiện có sẽ bị thay.')) return;
+  const res=runAutoSchedule(mon); showScheduleResult(res); renderWeek();
+}
 function pkName(pk){return PERIODS.find(p=>p.key===pk).name;}
-function showImportResult(created,overflow){
-  const mon=curMonday; const gaps=weekWarnings(mon).filter(w=>/thiếu/.test(w));
-  let html=`<div class="grip"></div><h2>✅ Đã xếp lịch</h2>
-    <div class="sub">Tuần ${dmShort(mon)} – ${dmShort(addDays(mon,6))}</div>`;
-  if(created.length) html+=`<div class="warnbox" style="background:#E7F3EC;border-color:#BEE0CB"><h3 style="color:#1f7a4d">Đã thêm ${created.length} nhân viên mới</h3><ul>${created.map(n=>`<li style="color:#256b45">${esc(n)} — nhớ vào tab Nhân viên đặt lương/giờ</li>`).join('')}</ul></div>`;
-  if(overflow.length){
-    html+=`<div class="warnbox"><h3>⚠️ ${overflow.length} lượt bị bỏ (vượt định mức — điền sau)</h3><ul>${overflow.map(o=>`<li><b>${esc(o.name)}</b> · ${o.role} · ${DOW[o.day]} ${pkName(o.pk)}</li>`).join('')}</ul><p style="font-size:12.5px;margin:6px 0 0;color:#7d2622">Báo các bạn này chọn ca/buổi khác.</p></div>`;
-  }
-  if(gaps.length){
-    html+=`<div class="warnbox" style="background:#FFF4E0;border-color:#F0D9A8"><h3 style="color:#9a6a10">Còn thiếu người</h3><ul>${gaps.map(g=>`<li style="color:#7a5410">${g}</li>`).join('')}</ul></div>`;
-  }
-  if(!overflow.length&&!gaps.length) html+=`<div class="empty" style="padding:20px"><div class="big">🎉</div>Lịch đủ người, không có ai bị trùng!</div>`;
+function showScheduleResult(res){
+  const {created=[],gaps=[],under=[],minS=0}=res; const mon=curMonday;
+  let html=`<div class="grip"></div><h2>✅ Đã tự xếp ca</h2><div class="sub">Tuần ${dmShort(mon)} – ${dmShort(addDays(mon,6))} · đã chia cân bằng</div>`;
+  if(created.length) html+=`<div class="warnbox" style="background:#E7F3EC;border-color:#BEE0CB"><h3 style="color:#1f7a4d">Đã thêm ${created.length} nhân viên mới</h3><ul>${created.map(n=>`<li style="color:#256b45">${esc(n)} — nhớ đặt lương/giờ ở tab Nhân viên</li>`).join('')}</ul></div>`;
+  if(gaps.length) html+=`<div class="warnbox"><h3>⚠️ Thiếu người (không đủ người rảnh)</h3><ul>${gaps.map(g=>`<li><b>${DOW[g.day]}</b> ca ${pkName(g.pk)} · ${g.role}: ${g.filled}/${g.need}</li>`).join('')}</ul><p style="font-size:12.5px;margin:6px 0 0;color:#7d2622">Vào ngày đó bấm "+ Thêm" để xếp bù.</p></div>`;
+  if(under.length) html+=`<div class="warnbox" style="background:#FFF4E0;border-color:#F0D9A8"><h3 style="color:#9a6a10">Chưa đủ ${minS} ca tối thiểu</h3><ul>${under.map(u=>`<li style="color:#7a5410">${esc(u.name)}: ${u.got}/${minS} ca (do rảnh ít hoặc ca đã đầy)</li>`).join('')}</ul></div>`;
+  if(!gaps.length&&!under.length) html+=`<div class="empty" style="padding:20px"><div class="big">🎉</div>Đủ người mọi ca, chia cân bằng!</div>`;
   html+=`<button class="btn wide" id="okImport" style="margin-top:12px">Xem lịch tuần</button>`;
   document.getElementById('sheet').innerHTML=html;
   document.getElementById('okImport').onclick=closeSheet;
@@ -1255,6 +1284,10 @@ function renderSettings(){
       <table class="req-tbl"><thead><tr><th></th>${DB.settings.positions.map(p=>`<th>${esc(p)}</th>`).join('')}</tr></thead><tbody>
       ${PERIODS.map(p=>`<tr><td class="rq-per"><span class="dot c-${p.cls}"></span>${p.name}</td>${DB.settings.positions.map(role=>`<td><input class="rq-in" inputmode="numeric" data-pk="${p.key}" data-role="${esc(role)}" value="${(DB.settings.req[p.key]||{})[role]||0}"></td>`).join('')}</tr>`).join('')}
       </tbody></table>
+      <div class="row between" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
+        <div><b style="font-size:14px">Số ca tối thiểu / người</b><div class="muted" style="font-size:12px">Khi tự xếp, cố cho mỗi bạn đủ số ca này (0 = tắt)</div></div>
+        <input id="setMinShifts" inputmode="numeric" value="${DB.settings.minShifts||0}" style="width:64px;height:44px;text-align:center;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);font-weight:700;font-size:16px">
+      </div>
     </div>
 
     <div class="sec-title">Khung giờ ca &amp; số giờ</div>
@@ -1295,6 +1328,7 @@ function renderSettings(){
     DB.settings.req[pk][role]=Math.max(0,parseInt(ev.target.value)||0);
     save();
   });
+  document.getElementById('setMinShifts').onchange=ev=>{DB.settings.minShifts=Math.max(0,parseInt(ev.target.value)||0);save();};
   document.getElementById('setPos').onchange=ev=>{const arr=ev.target.value.split(',').map(s=>s.trim()).filter(Boolean);if(arr.length){DB.settings.positions=arr;save();render();}};
   document.querySelectorAll('[data-editshift]').forEach(b=>b.onclick=()=>openShiftTypeSheet(b.dataset.editshift));
   document.getElementById('addShiftType').onclick=()=>openShiftTypeSheet();
