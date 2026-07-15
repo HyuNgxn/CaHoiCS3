@@ -922,15 +922,20 @@ function bindImportActions(){
 }
 function processRegistration(text){
   const rows=parseCSV(text).filter(r=>r.some(c=>c&&c.trim()!==''));
-  // tìm dòng tiêu đề: ô nào là "Tên" (ở bất kỳ cột nào)
-  let hi=-1, nameCol=0;
-  const isName=x=>['ten','ho ten','ho va ten','ten nv','ten nhan vien'].includes(noAccent(x||''));
-  for(let i=0;i<rows.length;i++){ const c=rows[i].findIndex(isName); if(c>=0){hi=i;nameCol=c;break;} }
-  if(hi<0) throw new Error('Không thấy cột "Tên" trong file. Kiểm tra lại đúng bảng đăng ký.');
+  // tìm dòng tiêu đề = dòng có nhiều cột buổi nhất (VD "T2 Sáng"). Bền vững kể cả khi
+  // Google gộp tiêu đề/hướng dẫn vào ô "Tên".
+  let hi=-1, best=0;
+  for(let i=0;i<rows.length;i++){ const cnt=rows[i].filter(c=>colMeta(c)).length; if(cnt>best){best=cnt;hi=i;} }
+  if(hi<0||best<3) throw new Error('Không đọc được bảng đăng ký (thiếu các cột buổi như "T2 Sáng").');
   const header=rows[hi];
+  const metas=header.map(colMeta);
+  const nameRe=/(^|[^a-z])ten([^a-z]|$)/;
   let roleCol=header.findIndex(c=>/vi\s*tri/.test(noAccent(c)));
+  let nameCol=header.findIndex((c,i)=>!metas[i] && i!==roleCol && nameRe.test(noAccent(c)));
+  if(nameCol<0) nameCol=header.findIndex((c,i)=>!metas[i] && i!==roleCol && !/tong|total/.test(noAccent(c)));
+  if(nameCol<0) nameCol=0;
   if(roleCol<0) roleCol=nameCol+1;
-  const metas=header.map((h,i)=> (i===nameCol||i===roleCol)?null:colMeta(h) );
+  const isName=x=>nameRe.test(noAccent(x||''));
   // gom đăng ký theo thứ tự dòng
   const people=[];
   for(let r=hi+1;r<rows.length;r++){
