@@ -1,5 +1,5 @@
 /* Service worker — cache app shell for offline use */
-const CACHE = 'xepca-v2';
+const CACHE = 'xepca-v3';
 const ASSETS = [
   './',
   'index.html',

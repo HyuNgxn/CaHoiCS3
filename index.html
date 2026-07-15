@@ -265,6 +265,7 @@ function defaultData(){
   return {
     settings:{
       branch:'Cơ sở 3',
+      sheetUrl:'https://docs.google.com/spreadsheets/d/1ZWwDEWoZyhM9c6yfVPTTnHj5649NDkrtp1yrVUy-fDA/edit?gid=1611437518',
       positions:['Pha chế','Phục vụ','Giữ xe'],
       // định mức người mỗi ca (period) theo từng vị trí
       req:{
@@ -299,6 +300,7 @@ function migrate(r){
   r.settings=r.settings||{};
   if(!r.settings.positions||!r.settings.positions.length) r.settings.positions=d.settings.positions;
   if(!r.settings.req) r.settings.req=d.settings.req;
+  if(r.settings.sheetUrl==null) r.settings.sheetUrl='';
   r.shiftTypes=r.shiftTypes||d.shiftTypes;
   r.employees=r.employees||[];
   r.schedule=r.schedule||{};
@@ -517,9 +519,10 @@ function renderWeek(){
   </div>`;
 
   if(DB.employees.length===0){
-    html+=`<div class="empty"><div class="big">📋</div>Chưa có nhân viên.<br>Thêm người ở tab <b>Nhân viên</b> rồi quay lại xếp ca.</div>`;
+    html+=`<div class="empty" style="padding-bottom:16px"><div class="big">📋</div>Chưa có nhân viên.<br>Nhập từ Google Sheet đăng ký (tự tạo nhân viên),<br>hoặc thêm tay ở tab <b>Nhân viên</b>.</div>`;
+    html+=importActionsHTML();
     el.innerHTML=html;
-    bindWeekNav(); return;
+    bindWeekNav(); bindImportActions(); return;
   }
 
   if(swapMode){
@@ -577,19 +580,16 @@ function renderWeek(){
     <button class="btn ghost" id="btnCopy"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Chép tuần trước</button>
     <button class="btn ghost" id="btnSwap"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>Đổi ca</button>
   </div>
-  <button class="btn wide" id="btnImport" style="margin-top:10px;background:#2E7D5B"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg>Nhập đăng ký (Google Sheet)</button>
-  <button class="btn wide" id="btnExport" style="margin-top:10px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>Xuất ảnh gửi Zalo</button>
-  <input type="file" id="importFile" accept=".csv,text/csv,application/vnd.ms-excel" style="display:none">
-  <p style="text-align:center;margin:12px 0 0;font-size:13px"><a class="link" href="DangKyCa-CoSo3.xlsx" download>⬇︎ Tải file mẫu đăng ký</a> <span class="muted">· mở bằng Google Sheet, chia sẻ cho NV điền</span></p>`;
+  <button class="btn wide" id="btnExport" style="margin-top:10px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>Xuất ảnh gửi Zalo</button>`;
+  html+=importActionsHTML();
 
   el.innerHTML=html;
   bindWeekNav();
   bindGridCells();
+  bindImportActions();
   document.getElementById('btnCopy').onclick=copyPrevWeek;
   document.getElementById('btnSwap').onclick=()=>{swapMode=true;swapSel=null;renderWeek();};
   document.getElementById('btnExport').onclick=exportWeekImage;
-  document.getElementById('btnImport').onclick=()=>document.getElementById('importFile').click();
-  document.getElementById('importFile').onchange=onImportFile;
   if(swapMode) document.getElementById('swapCancel').onclick=()=>{swapMode=false;swapSel=null;renderWeek();};
 }
 function fmtH(h){ return (Number.isInteger(h)?h:h.toFixed(1))+'h'; }
@@ -752,20 +752,59 @@ function onImportFile(ev){
   rd.readAsText(f,'utf-8');
   ev.target.value='';
 }
+// build link CSV (gviz) từ link Google Sheet bình thường
+function sheetCsvUrl(link){
+  const m=String(link).match(/\/spreadsheets\/d\/([a-zA-Z0-9\-_]+)/); if(!m)return null;
+  let gid='0'; const g=String(link).match(/[#&?]gid=(\d+)/); if(g)gid=g[1];
+  return `https://docs.google.com/spreadsheets/d/${m[1]}/gviz/tq?tqx=out:csv&gid=${gid}`;
+}
+async function syncFromSheet(){
+  const link=(DB.settings.sheetUrl||'').trim();
+  if(!link){ toast('Chưa có link Sheet — vào Cài đặt để dán'); go('settings'); return; }
+  const url=sheetCsvUrl(link);
+  if(!url){ toast('Link Google Sheet không hợp lệ'); return; }
+  const btn=document.getElementById('btnSync'); if(btn){btn.disabled=true;btn.style.opacity=.6;btn.innerHTML='Đang tải từ Google Sheet…';}
+  let text;
+  try{
+    const r=await fetch(url+'&_='+Date.now(),{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    text=await r.text();
+  }catch(e){
+    alert('Không tải được từ Google Sheet.\n\nKiểm tra: có mạng chưa, và Sheet đã đặt chia sẻ "Bất kỳ ai có đường liên kết".\n\n('+e.message+')');
+    renderWeek(); return;
+  }
+  try{ processRegistration(text); }
+  catch(e){ alert('Lấy được dữ liệu nhưng chưa đọc được: '+e.message); renderWeek(); }
+}
+function importActionsHTML(){
+  const hasLink=!!(DB.settings.sheetUrl||'').trim();
+  let h='';
+  if(hasLink) h+=`<button class="btn wide" id="btnSync" style="margin-top:10px;background:#2E7D5B"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg>Đồng bộ từ Google Sheet</button>`;
+  h+=`<button class="btn ghost wide" id="btnImport" style="margin-top:10px">${hasLink?'Hoặc nhập từ file CSV':'Nhập đăng ký từ file CSV'}</button>
+  <input type="file" id="importFile" accept=".csv,text/csv,application/vnd.ms-excel" style="display:none">
+  <p style="text-align:center;margin:12px 0 0;font-size:13px"><a class="link" href="DangKyCa-CoSo3.xlsx" download>⬇︎ Tải file mẫu đăng ký</a></p>`;
+  return h;
+}
+function bindImportActions(){
+  const s=document.getElementById('btnSync'); if(s) s.onclick=syncFromSheet;
+  const b=document.getElementById('btnImport'); if(b) b.onclick=()=>document.getElementById('importFile').click();
+  const f=document.getElementById('importFile'); if(f) f.onchange=onImportFile;
+}
 function processRegistration(text){
   const rows=parseCSV(text).filter(r=>r.some(c=>c&&c.trim()!==''));
-  // tìm dòng tiêu đề (ô đầu là "Tên")
-  let hi=rows.findIndex(r=>['ten','ho ten','ho va ten'].includes(noAccent(r[0]||'')));
-  if(hi<0) throw new Error('Không thấy cột "Tên"');
+  // tìm dòng tiêu đề: ô nào là "Tên" (ở bất kỳ cột nào)
+  let hi=-1, nameCol=0;
+  const isName=x=>['ten','ho ten','ho va ten','ten nv','ten nhan vien'].includes(noAccent(x||''));
+  for(let i=0;i<rows.length;i++){ const c=rows[i].findIndex(isName); if(c>=0){hi=i;nameCol=c;break;} }
+  if(hi<0) throw new Error('Không thấy cột "Tên" trong file. Kiểm tra lại đúng bảng đăng ký.');
   const header=rows[hi];
-  // vị trí cột "Vị trí"
   let roleCol=header.findIndex(c=>/vi\s*tri/.test(noAccent(c)));
-  if(roleCol<0) roleCol=1;
-  const metas=header.map((h,i)=> (i<=Math.max(1,roleCol)?null:colMeta(h)) );
+  if(roleCol<0) roleCol=nameCol+1;
+  const metas=header.map((h,i)=> (i===nameCol||i===roleCol)?null:colMeta(h) );
   // gom đăng ký theo thứ tự dòng
   const people=[];
   for(let r=hi+1;r<rows.length;r++){
-    const row=rows[r]; const name=(row[0]||'').trim(); if(!name) continue;
+    const row=rows[r]; const name=(row[nameCol]||'').trim(); if(!name||isName(name)) continue;
     const role=matchRole(row[roleCol]||'');
     const claims=[];
     metas.forEach((m,i)=>{ if(m && isClaimed(row[i]||'')) claims.push(m); });
@@ -1088,6 +1127,13 @@ function renderSettings(){
       <div class="field" style="margin:0"><label>Tên cơ sở</label><input id="setBranch" value="${esc(DB.settings.branch||'')}"></div>
     </div>
 
+    <div class="sec-title">Link Google Sheet đăng ký</div>
+    <div class="card pad">
+      <div class="field" style="margin:0 0 10px"><label>Dán link Google Sheet (để bấm "Đồng bộ" ở Lịch tuần)</label>
+      <input id="setSheet" placeholder="https://docs.google.com/spreadsheets/d/..." value="${esc(DB.settings.sheetUrl||'')}"></div>
+      <p class="muted" style="margin:0;font-size:12.5px">Sheet phải đặt chia sẻ <b>"Bất kỳ ai có đường liên kết"</b> thì app mới đọc được. Mở đúng tab đăng ký rồi copy link trên trình duyệt.</p>
+    </div>
+
     <div class="sec-title">Định mức người mỗi ca</div>
     <div class="card pad">
       <p class="muted" style="margin:0 0 12px;font-size:13px">Số người cần cho mỗi buổi theo từng vị trí. Dùng để cảnh báo thiếu người và chia chỗ khi nhập đăng ký.</p>
@@ -1127,6 +1173,7 @@ function renderSettings(){
   el.innerHTML=html;
 
   document.getElementById('setBranch').onchange=ev=>{DB.settings.branch=ev.target.value.trim()||'Cơ sở 3';save();render();};
+  document.getElementById('setSheet').onchange=ev=>{DB.settings.sheetUrl=ev.target.value.trim();save();};
   document.querySelectorAll('.rq-in').forEach(inp=>inp.onchange=ev=>{
     const pk=ev.target.dataset.pk, role=ev.target.dataset.role;
     DB.settings.req[pk]=DB.settings.req[pk]||{};
