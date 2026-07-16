@@ -216,23 +216,36 @@
   .daysel button.today{border-color:var(--brand);color:var(--brand)}
   .daysel button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
   .daysel button.on small{opacity:.95}
+  /* thanh ngày + nút sửa */
+  .dbar{display:flex;align-items:center;gap:10px;margin:12px 2px 2px}
+  .dttl{font-weight:800;font-size:15px;flex:1}
+  .editbtn{padding:7px 14px;border-radius:11px;border:1px solid var(--line);background:var(--surface);color:var(--brand);font-weight:700;font-size:13.5px}
+  .editbtn.on{background:var(--brand);color:#fff;border-color:var(--brand)}
   /* roster blocks */
-  .rblock{margin-top:14px;overflow:hidden}
-  .rblock .rhead{display:flex;align-items:center;gap:9px;font-weight:800;font-size:16px;padding:13px 14px 11px;border-bottom:1px solid var(--line)}
+  .rblock{margin-top:10px;overflow:hidden}
+  .rblock.lack{border-color:#EBC9C4}
+  .rblock .rhead{display:flex;align-items:center;gap:9px;font-weight:800;font-size:15.5px;padding:11px 14px 9px;border-bottom:1px solid var(--line)}
   .rblock .rhead .time{margin-left:auto;color:var(--muted);font-weight:600;font-size:12.5px}
-  .rrow{display:flex;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line)}
+  .rrow{display:flex;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);align-items:flex-start}
   .rrow:last-child{border-bottom:0}
-  .rrow .rlabel{width:74px;flex:0 0 auto;font-weight:700;font-size:14px;padding-top:5px}
-  .rrow .rlabel small{display:block;color:var(--muted);font-weight:600;font-size:11.5px;margin-top:1px}
-  .rchips{display:flex;flex-wrap:wrap;gap:7px;flex:1;align-items:flex-start}
-  .nchip{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);font-weight:600;font-size:14px;color:var(--ink)}
+  .rrow .rlabel{width:82px;flex:0 0 auto;font-weight:700;font-size:13.5px;padding-top:3px}
+  .cnt{display:block;font-weight:700;font-size:11px;margin-top:2px;letter-spacing:.01em}
+  .cnt.ok{color:#2E7D5B}
+  .cnt.bad{color:var(--danger)}
+  .rchips{display:flex;flex-wrap:wrap;gap:6px;flex:1;align-items:center;min-height:28px}
+  /* xem: tên chữ, gọn */
+  .names{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding-top:2px}
+  .nm2{font-weight:600;font-size:14.5px}
+  .nm2 i{font-style:normal;font-size:10.5px;color:var(--muted);font-weight:700;background:var(--surface-2);padding:1px 5px;border-radius:6px;margin-left:3px}
+  .sep{color:var(--line);font-weight:700}
+  .nobody{font-size:13px;color:var(--muted);font-style:italic}
+  /* sửa: chip */
+  .nchip{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);font-weight:600;font-size:13.5px;color:var(--ink)}
   .nchip:active{transform:scale(.96)}
   .nchip.bike{background:#FFF1D9;border-color:#F0D9A8}
   .nchip .tt{font-size:10.5px;color:var(--muted);font-weight:700;background:#fff;padding:1px 5px;border-radius:6px;margin-left:2px}
-  .addp{padding:7px 12px;border-radius:999px;border:1px dashed var(--brand);color:var(--brand);font-weight:700;font-size:13px;background:transparent}
-  .addp:active{background:var(--brand-soft)}
-  .bikepick{background:var(--surface-2)}
-  .bikebtn{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;color:var(--brand-ink);font-weight:700;padding:7px 12px;border:1px solid #E7C9B2;border-radius:11px;background:var(--brand-soft)}
+  .addp{width:28px;height:28px;border-radius:50%;border:1px dashed var(--line);color:var(--muted);font-weight:700;font-size:16px;background:transparent;line-height:1}
+  .addp:active{background:var(--brand-soft);color:var(--brand);border-color:var(--brand)}
   .req-tbl{width:100%;border-collapse:collapse}
   .req-tbl th{font-size:12px;color:var(--muted);font-weight:700;padding:0 4px 8px;text-align:center}
   .req-tbl th:first-child{text-align:left}
@@ -290,7 +303,9 @@ function defaultData(){
     settings:{
       branch:'Cơ sở 3',
       sheetUrl:'https://docs.google.com/spreadsheets/d/14kMj5VarO4H-QuYbG1Sj95gCDQU3J8S5QskKl8XBZEg/edit?gid=1443153493',
-      minShifts:0,                        // số ca tối thiểu mỗi người/tuần (0 = tắt)
+      minShifts:4,                        // số ca tối thiểu mỗi người/tuần (0 = tắt)
+      minToi:2,                           // số ca TỐI tối thiểu mỗi người/tuần (0 = tắt)
+      maxSameBuoi:4,                      // tối đa số ca cùng 1 buổi/tuần (tránh làm mãi 1 buổi)
       positions:['Pha chế','Phục vụ'],   // Giữ xe là 1 phục vụ được đánh dấu (flag bike)
       // định mức người mỗi ca (period) theo từng vị trí
       req:{
@@ -328,7 +343,9 @@ function migrate(r){
   if(r.settings.sheetUrl==null) r.settings.sheetUrl='';
   // đổi link sheet cũ -> sheet mới (Cơ sở 3, bản availability)
   if(r.settings.sheetUrl.includes('1ZWwDEWoZyhM9c6yfVPTTnHj5649NDkrtp1yrVUy-fDA')) r.settings.sheetUrl=d.settings.sheetUrl;
-  if(r.settings.minShifts==null) r.settings.minShifts=0;
+  if(r.settings.minShifts==null) r.settings.minShifts=d.settings.minShifts;
+  if(r.settings.minToi==null) r.settings.minToi=d.settings.minToi;
+  if(r.settings.maxSameBuoi==null) r.settings.maxSameBuoi=d.settings.maxSameBuoi;
   // Giữ xe không còn là vị trí -> chuyển thành Phục vụ + flag giữ xe
   if(r.settings.positions.includes('Giữ xe')){
     r.settings.positions=r.settings.positions.filter(p=>p!=='Giữ xe');
@@ -540,7 +557,7 @@ function dayWarnings(mon,dayIdx,dateStr){
 /* ============================================================
    WEEK GRID  (tính năng chính)
    ============================================================ */
-let selDay=null;
+let selDay=null, editMode=false;
 function renderWeek(){
   const el=document.getElementById('v-week');
   const mon=curMonday; const sun=addDays(mon,6);
@@ -573,6 +590,9 @@ function renderWeek(){
   }
 
   const dDate=addDays(mon,selDay); const dStr=ymd(dDate);
+  // thanh: ngày + nút Sửa
+  html+=`<div class="dbar"><div class="dttl">${DOW_FULL[(dDate.getDay()+6)%7]}, ${dmShort(dDate)}</div>
+    <button class="editbtn ${editMode?'on':''}" id="btnEdit">${editMode?'✓ Xong':'✎ Sửa'}</button></div>`;
   // cảnh báo ngày
   const dw=dayWarnings(mon,selDay,dStr);
   if(dw.length) html+=`<div class="warnbox"><h3>⚠️ Ngày ${DOW[selDay]} cần chú ý</h3><ul>${dw.map(w=>`<li>${w}</li>`).join('')}</ul></div>`;
@@ -592,6 +612,7 @@ function renderWeek(){
   el.innerHTML=html;
   bindWeekNav(); bindDaySel(); bindImportActions();
   bindRoster();
+  const be=document.getElementById('btnEdit'); if(be) be.onclick=()=>{editMode=!editMode;renderWeek();};
   const ba=document.getElementById('btnAuto'); if(ba) ba.onclick=autoScheduleBtn;
   document.getElementById('btnCopy').onclick=copyPrevWeek;
   document.getElementById('btnExport').onclick=exportWeekImage;
@@ -610,24 +631,32 @@ function renderPeriodBlock(mon,day,p){
     });
   });
   const req=DB.settings.req[p.key]||{};
-  let h=`<div class="rblock card"><div class="rhead"><span class="dot c-${p.cls}"></span>Ca ${p.name}<span class="time">${canon?canon.label:''}</span></div>`;
+  const totalHave=Object.values(byRole).reduce((a,l)=>a+l.length,0);
+  const totalNeed=Object.values(req).reduce((a,b)=>a+b,0);
+  const allOk=totalNeed&&totalHave>=totalNeed;
+  let h=`<div class="rblock card ${allOk?'':'lack'}"><div class="rhead"><span class="dot c-${p.cls}"></span>Ca ${p.name}<span class="time">${canon?canon.label:''}</span></div>`;
   DB.settings.positions.forEach(role=>{
     const list=byRole[role]||[];
     const need=req[role]||0;
-    const short=need&&list.length<need;
-    h+=`<div class="rrow"><div class="rlabel">${role}<small class="${short?'danger-text':''}">${list.length}${need?'/'+need:''} người</small></div><div class="rchips">`;
-    list.forEach(x=>{
-      const nonCanon=canon&&x.c.typeId!==canon.id;
-      const bike=x.c.bike?'<span class="bk">🛵</span>':'';
-      h+=`<button class="nchip ${x.c.bike?'bike':''}" data-act="chip" data-day="${day}" data-emp="${x.e.id}" data-ci="${x.ci}">${bike}${esc(x.e.name)}${nonCanon?`<span class="tt">${x.st.label}</span>`:''}</button>`;
-    });
-    h+=`<button class="addp" data-act="add" data-day="${day}" data-pk="${p.key}" data-role="${esc(role)}">+ Thêm</button></div></div>`;
+    const ok=!need||list.length>=need;
+    const badge=need?`<span class="cnt ${ok?'ok':'bad'}">${ok?'✓ ':''}${list.length}/${need}</span>`:'';
+    h+=`<div class="rrow"><div class="rlabel">${role}${badge}</div><div class="rchips">`;
+    if(editMode){
+      list.forEach(x=>{
+        const nonCanon=canon&&x.c.typeId!==canon.id;
+        h+=`<button class="nchip ${x.c.bike?'bike':''}" data-act="chip" data-day="${day}" data-emp="${x.e.id}" data-ci="${x.ci}">${x.c.bike?'🛵 ':''}${esc(x.e.name)}${nonCanon?`<span class="tt">${x.st.label}</span>`:''}</button>`;
+      });
+      h+=`<button class="addp" data-act="add" data-day="${day}" data-pk="${p.key}" data-role="${esc(role)}" aria-label="Thêm">+</button>`;
+    }else{
+      if(list.length){
+        h+=`<div class="names">`+list.map(x=>{
+          const nonCanon=canon&&x.c.typeId!==canon.id;
+          return `<span class="nm2">${x.c.bike?'🛵 ':''}${esc(x.e.name)}${nonCanon?`<i>${x.st.label}</i>`:''}</span>`;
+        }).join('<span class="sep">·</span>')+`</div>`;
+      } else h+=`<span class="nobody">chưa có ai</span>`;
+    }
+    h+=`</div></div>`;
   });
-  // chọn người giữ xe (trong Phục vụ)
-  if(byRole['Phục vụ']&&byRole['Phục vụ'].length){
-    const bikePerson=byRole['Phục vụ'].find(x=>x.c.bike);
-    h+=`<div class="rrow bikepick"><div class="rlabel">🛵 Giữ xe</div><div class="rchips"><button class="bikebtn" data-act="bike" data-day="${day}" data-pk="${p.key}">${bikePerson?esc(bikePerson.e.name):'Chọn người ra giữ xe'} ▾</button></div></div>`;
-  }
   h+=`</div>`;
   return h;
 }
@@ -637,7 +666,6 @@ function bindRoster(){
       const a=b.dataset.act;
       if(a==='chip') openAssignSheet(+b.dataset.day,b.dataset.emp,+b.dataset.ci);
       else if(a==='add') openAddSheet(+b.dataset.day,b.dataset.pk,b.dataset.role);
-      else if(a==='bike') openBikeSheet(+b.dataset.day,b.dataset.pk);
     };
   });
 }
@@ -681,9 +709,13 @@ function openAssignSheet(day,empId,ci){
     covers.map(t=>`<button class="opt ${t.id===c.typeId?'on':''}" data-t="${t.id}"><span class="dot c-${shiftClass(t)}"></span><span>${t.label}<small>${fmtH(t.hours)}</small></span></button>`).join('')+`</div></div>`;
   html+=`<div class="field"><label>Vị trí</label><div class="seg" id="posSeg">`+
     DB.settings.positions.map(pp=>`<button data-p="${esc(pp)}" class="${c.pos===pp?'on':''}">${esc(pp)}</button>`).join('')+`</div></div>`;
+  const pkOf=(cur&&coveredPeriods(cur)[0])||null;
+  if(c.pos==='Phục vụ'&&pkOf) html+=`<button class="btn ghost wide" id="bikeBtn" style="margin-top:6px;${c.bike?'background:#FFF1D9;border-color:#F0D9A8;color:#8a5410':''}">${c.bike?'🛵 Đang giữ xe — bấm để bỏ':'🛵 Đặt làm người giữ xe'}</button>`;
   html+=`<button class="btn ghost wide danger-text" id="rmShift" style="margin-top:6px">Xoá ca này</button>
     <button class="btn wide" id="doneShift" style="margin-top:10px">Xong</button>`;
   document.getElementById('sheet').innerHTML=html;
+  const bb=document.getElementById('bikeBtn');
+  if(bb) bb.onclick=()=>{ setBikeFor(day,pkOf, c.bike?null:e.id); closeSheet(); renderWeek(); };
   let draft={typeId:c.typeId,pos:c.pos,bike:c.bike};
   document.querySelectorAll('.opt-grid .opt').forEach(b=>b.onclick=()=>{draft.typeId=b.dataset.t;document.querySelectorAll('.opt-grid .opt').forEach(z=>z.classList.toggle('on',z===b));});
   document.querySelectorAll('#posSeg button').forEach(b=>b.onclick=()=>{draft.pos=b.dataset.p;document.querySelectorAll('#posSeg button').forEach(z=>z.classList.toggle('on',z===b));});
@@ -695,33 +727,19 @@ function openAssignSheet(day,empId,ci){
   };
   openSheet();
 }
-/* --- chọn người giữ xe cho 1 buổi --- */
-function openBikeSheet(day,pk){
+/* --- đặt người giữ xe cho 1 buổi (chỉ 1 người) --- */
+function setBikeFor(day,pk,empId){
   const mon=curMonday;
-  const servers=[];
-  DB.employees.forEach(e=>cellShifts(mon,e.id,day).forEach((c,ci)=>{
-    const st=typeById(c.typeId);
-    if(c.pos==='Phục vụ'&&st&&coveredPeriods(st).includes(pk)) servers.push({e,ci,bike:!!c.bike});
-  }));
-  const p=PERIODS.find(x=>x.key===pk);
-  let html=`<div class="grip"></div><h2>🛵 Người giữ xe</h2><div class="sub">Ca ${p.name} · ${DOW[day]} ${dmShort(addDays(mon,day))} · chọn 1 bạn phục vụ</div><div class="existing">`;
-  html+=`<button class="exrow" data-bike="none" style="width:100%">Không ai giữ xe</button>`;
-  servers.forEach(s=>{ html+=`<button class="exrow ${s.bike?'':''}" data-bike="${s.e.id}" style="width:100%;text-align:left">
-    <div class="av" style="width:32px;height:32px;font-size:12px;border-radius:50%;background:${s.bike?'#FFE7BD':'var(--brand-soft)'};color:var(--brand-ink);display:grid;place-items:center;font-weight:800">${initials(s.e.name)}</div>
-    <div style="flex:1"><b>${esc(s.e.name)}</b></div>${s.bike?'<span class="pill bg-full">🛵 đang giữ xe</span>':''}</button>`; });
-  html+=`</div>`;
-  document.getElementById('sheet').innerHTML=html;
-  document.querySelectorAll('[data-bike]').forEach(b=>b.onclick=()=>{
-    const pick=b.dataset.bike;
-    DB.employees.forEach(e=>{ const arr=cellShifts(mon,e.id,day); let changed=false;
-      arr.forEach(c=>{ const st=typeById(c.typeId);
-        if(c.pos==='Phục vụ'&&st&&coveredPeriods(st).includes(pk)){ const want=(e.id===pick); if(!!c.bike!==want){c.bike=want;changed=true;} }
-      });
-      if(changed) setCell(mon,e.id,day,arr.slice());
+  DB.employees.forEach(e=>{
+    const arr=cellShifts(mon,e.id,day); let changed=false;
+    arr.forEach(c=>{ const st=typeById(c.typeId);
+      if(c.pos==='Phục vụ'&&st&&coveredPeriods(st).includes(pk)){
+        const want=(e.id===empId); if(!!c.bike!==want){ c.bike=want; changed=true; }
+      }
     });
-    save(); closeSheet(); toast(pick==='none'?'Đã bỏ giữ xe':'Đã chọn người giữ xe'); renderWeek();
+    if(changed) setCell(mon,e.id,day,arr.slice());
   });
-  openSheet();
+  save(); toast(empId?'Đã chọn người giữ xe':'Đã bỏ giữ xe');
 }
 function fmtH(h){ return (Number.isInteger(h)?h:h.toFixed(1))+'h'; }
 function weekLabel(mon){
@@ -992,8 +1010,11 @@ function applyRegistration(people){
 /* ---------- thuật toán xếp ca cân bằng từ buổi rảnh ---------- */
 function runAutoSchedule(mon){
   const wk=weekKey(mon); const avail=DB.availability[wk]||{};
-  const load={}; DB.employees.forEach(e=>load[e.id]=0);
+  const load={}; const cnt={};   // cnt[emp][pk] = số ca cùng buổi trong tuần
+  DB.employees.forEach(e=>{ load[e.id]=0; cnt[e.id]={m:0,a:0,e:0}; });
   const minS=DB.settings.minShifts||0;
+  const minToi=DB.settings.minToi||0;
+  const maxSame=DB.settings.maxSameBuoi||99;
   const newWeek={}; const gaps=[];
   const isFree=(id,d,pk)=> avail[id] && avail[id][d] && avail[id][d].includes(pk);
   const busyPeriod=(id,d,pk)=> (newWeek[id]&&newWeek[id][d]||[]).some(c=>coveredPeriods(typeById(c.typeId)).includes(pk));
@@ -1008,15 +1029,18 @@ function runAutoSchedule(mon){
         for(let k=0;k<need;k++){
           const cands=DB.employees.filter(e=> e.pos===role && !onLeave(ds,e.id) && isFree(e.id,d,p.key) && !busyPeriod(e.id,d,p.key));
           if(!cands.length) break;
-          // ưu tiên: tránh vừa ca tối hôm qua -> chưa đủ ca tối thiểu -> ít ca nhất
+          // thứ tự ưu tiên: né ca tối hôm qua -> chưa vượt trần cùng buổi ->
+          // (ca tối) ai chưa đủ ca tối -> ai chưa đủ ca tối thiểu -> ai ít ca nhất
           cands.sort((a,b)=>{
             if(p.key==='m'){ const ar=lateYesterday(a.id,d)?1:0, br=lateYesterday(b.id,d)?1:0; if(ar!==br)return ar-br; }
+            const ac=cnt[a.id][p.key]>=maxSame?1:0, bc=cnt[b.id][p.key]>=maxSame?1:0; if(ac!==bc)return ac-bc;
+            if(p.key==='e'){ const at=cnt[a.id].e<minToi?0:1, bt=cnt[b.id].e<minToi?0:1; if(at!==bt)return at-bt; }
             const am=load[a.id]<minS?0:1, bm=load[b.id]<minS?0:1; if(am!==bm)return am-bm;
             return load[a.id]-load[b.id];
           });
           const pick=cands[0]; const t=canonicalShiftFor(p.key);
           newWeek[pick.id]=newWeek[pick.id]||{}; (newWeek[pick.id][d]=newWeek[pick.id][d]||[]).push({typeId:t.id,pos:role});
-          load[pick.id]++; filled++;
+          load[pick.id]++; cnt[pick.id][p.key]++; filled++;
         }
         if(filled<need) gaps.push({day:d,pk:p.key,role,filled,need});
       });
@@ -1024,7 +1048,8 @@ function runAutoSchedule(mon){
   }
   DB.schedule[wk]=newWeek; save();
   const under=DB.employees.filter(e=>minS>0 && load[e.id]<minS).map(e=>({name:e.name,got:load[e.id]}));
-  return {gaps, under, load, minS};
+  const underToi=DB.employees.filter(e=>minToi>0 && load[e.id]>0 && cnt[e.id].e<minToi).map(e=>({name:e.name,got:cnt[e.id].e}));
+  return {gaps, under, underToi, load, minS, minToi};
 }
 function autoScheduleBtn(){
   const mon=curMonday, wk=weekKey(mon);
@@ -1034,12 +1059,13 @@ function autoScheduleBtn(){
 }
 function pkName(pk){return PERIODS.find(p=>p.key===pk).name;}
 function showScheduleResult(res){
-  const {created=[],gaps=[],under=[],minS=0}=res; const mon=curMonday;
+  const {created=[],gaps=[],under=[],underToi=[],minS=0,minToi=0}=res; const mon=curMonday;
   let html=`<div class="grip"></div><h2>✅ Đã tự xếp ca</h2><div class="sub">Tuần ${dmShort(mon)} – ${dmShort(addDays(mon,6))} · đã chia cân bằng</div>`;
   if(created.length) html+=`<div class="warnbox" style="background:#E7F3EC;border-color:#BEE0CB"><h3 style="color:#1f7a4d">Đã thêm ${created.length} nhân viên mới</h3><ul>${created.map(n=>`<li style="color:#256b45">${esc(n)} — nhớ đặt lương/giờ ở tab Nhân viên</li>`).join('')}</ul></div>`;
   if(gaps.length) html+=`<div class="warnbox"><h3>⚠️ Thiếu người (không đủ người rảnh)</h3><ul>${gaps.map(g=>`<li><b>${DOW[g.day]}</b> ca ${pkName(g.pk)} · ${g.role}: ${g.filled}/${g.need}</li>`).join('')}</ul><p style="font-size:12.5px;margin:6px 0 0;color:#7d2622">Vào ngày đó bấm "+ Thêm" để xếp bù.</p></div>`;
   if(under.length) html+=`<div class="warnbox" style="background:#FFF4E0;border-color:#F0D9A8"><h3 style="color:#9a6a10">Chưa đủ ${minS} ca tối thiểu</h3><ul>${under.map(u=>`<li style="color:#7a5410">${esc(u.name)}: ${u.got}/${minS} ca (do rảnh ít hoặc ca đã đầy)</li>`).join('')}</ul></div>`;
-  if(!gaps.length&&!under.length) html+=`<div class="empty" style="padding:20px"><div class="big">🎉</div>Đủ người mọi ca, chia cân bằng!</div>`;
+  if(underToi.length) html+=`<div class="warnbox" style="background:#EFEAFB;border-color:#D6CBF3"><h3 style="color:#5b45a8">Chưa đủ ${minToi} ca tối</h3><ul>${underToi.map(u=>`<li style="color:#4b3a8a">${esc(u.name)}: ${u.got}/${minToi} ca tối (ít bạn đăng ký rảnh buổi tối)</li>`).join('')}</ul></div>`;
+  if(!gaps.length&&!under.length&&!underToi.length) html+=`<div class="empty" style="padding:20px"><div class="big">🎉</div>Đủ người mọi ca, chia cân bằng!</div>`;
   html+=`<button class="btn wide" id="okImport" style="margin-top:12px">Xem lịch tuần</button>`;
   document.getElementById('sheet').innerHTML=html;
   document.getElementById('okImport').onclick=closeSheet;
@@ -1298,8 +1324,16 @@ function renderSettings(){
       ${PERIODS.map(p=>`<tr><td class="rq-per"><span class="dot c-${p.cls}"></span>${p.name}</td>${DB.settings.positions.map(role=>`<td><input class="rq-in" inputmode="numeric" data-pk="${p.key}" data-role="${esc(role)}" value="${(DB.settings.req[p.key]||{})[role]||0}"></td>`).join('')}</tr>`).join('')}
       </tbody></table>
       <div class="row between" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
-        <div><b style="font-size:14px">Số ca tối thiểu / người</b><div class="muted" style="font-size:12px">Khi tự xếp, cố cho mỗi bạn đủ số ca này (0 = tắt)</div></div>
+        <div><b style="font-size:14px">Số ca tối thiểu / người</b><div class="muted" style="font-size:12px">Mỗi bạn ít nhất bao nhiêu ca/tuần (nghỉ hè để cao, vào năm học để 4)</div></div>
         <input id="setMinShifts" inputmode="numeric" value="${DB.settings.minShifts||0}" style="width:64px;height:44px;text-align:center;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);font-weight:700;font-size:16px">
+      </div>
+      <div class="row between" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+        <div><b style="font-size:14px">Số ca tối tối thiểu / người</b><div class="muted" style="font-size:12px">Chia đều ca tối, không dồn 1 người (0 = tắt)</div></div>
+        <input id="setMinToi" inputmode="numeric" value="${DB.settings.minToi||0}" style="width:64px;height:44px;text-align:center;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);font-weight:700;font-size:16px">
+      </div>
+      <div class="row between" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+        <div><b style="font-size:14px">Tối đa ca cùng 1 buổi / tuần</b><div class="muted" style="font-size:12px">Tránh 1 bạn làm mãi 1 buổi cả tuần → xoay vòng</div></div>
+        <input id="setMaxSame" inputmode="numeric" value="${DB.settings.maxSameBuoi||0}" style="width:64px;height:44px;text-align:center;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);font-weight:700;font-size:16px">
       </div>
     </div>
 
@@ -1342,6 +1376,8 @@ function renderSettings(){
     save();
   });
   document.getElementById('setMinShifts').onchange=ev=>{DB.settings.minShifts=Math.max(0,parseInt(ev.target.value)||0);save();};
+  document.getElementById('setMinToi').onchange=ev=>{DB.settings.minToi=Math.max(0,parseInt(ev.target.value)||0);save();};
+  document.getElementById('setMaxSame').onchange=ev=>{DB.settings.maxSameBuoi=Math.max(1,parseInt(ev.target.value)||99);save();};
   document.getElementById('setPos').onchange=ev=>{const arr=ev.target.value.split(',').map(s=>s.trim()).filter(Boolean);if(arr.length){DB.settings.positions=arr;save();render();}};
   document.querySelectorAll('[data-editshift]').forEach(b=>b.onclick=()=>openShiftTypeSheet(b.dataset.editshift));
   document.getElementById('addShiftType').onclick=()=>openShiftTypeSheet();
