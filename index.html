@@ -1192,7 +1192,16 @@ function runAutoSchedule(mon){
   }
   DB.schedule[wk]=newWeek; save();
   const under=DB.employees.filter(e=>minS>0 && load[e.id]<minS).map(e=>({name:e.name,got:load[e.id]}));
-  const underToi=DB.employees.filter(e=>minToi>0 && load[e.id]>0 && cnt[e.id].e<minToi).map(e=>({name:e.name,got:cnt[e.id].e}));
+  // chẩn đoán vì sao chưa đủ ca tối: do ít đăng ký rảnh tối, hay do hết suất?
+  const roleCount={}; DB.employees.forEach(e=>roleCount[e.pos]=(roleCount[e.pos]||0)+1);
+  const toiCap={}; DB.settings.positions.forEach(r=>toiCap[r]=((DB.settings.req.e||{})[r]||0)*7);
+  const underToi=DB.employees.filter(e=>minToi>0 && load[e.id]>0 && cnt[e.id].e<minToi).map(e=>{
+    let availToi=0; for(let d=0;d<7;d++) if(avail[e.id]&&avail[e.id][d]&&avail[e.id][d].includes('e')) availToi++;
+    const capShort=(toiCap[e.pos]||0) < minToi*(roleCount[e.pos]||0);
+    return {name:e.name, got:cnt[e.id].e, availToi, role:e.pos,
+            why: availToi<minToi ? 'avail' : (capShort?'cap':'other'),
+            cap:toiCap[e.pos]||0, nRole:roleCount[e.pos]||0};
+  });
   return {gaps, under, underToi, load, minS, minToi};
 }
 function autoScheduleBtn(){
@@ -1208,7 +1217,15 @@ function showScheduleResult(res){
   if(created.length) html+=`<div class="warnbox" style="background:#E7F3EC;border-color:#BEE0CB"><h3 style="color:#1f7a4d">Đã thêm ${created.length} nhân viên mới</h3><ul>${created.map(n=>`<li style="color:#256b45">${esc(n)} — nhớ đặt lương/giờ ở tab Nhân viên</li>`).join('')}</ul></div>`;
   if(gaps.length) html+=`<div class="warnbox"><h3>⚠️ Thiếu người (không đủ người rảnh)</h3><ul>${gaps.map(g=>`<li><b>${DOW[g.day]}</b> ca ${pkName(g.pk)} · ${g.role}: ${g.filled}/${g.need}</li>`).join('')}</ul><p style="font-size:12.5px;margin:6px 0 0;color:#7d2622">Vào ngày đó bấm "+ Thêm" để xếp bù.</p></div>`;
   if(under.length) html+=`<div class="warnbox" style="background:#FFF4E0;border-color:#F0D9A8"><h3 style="color:#9a6a10">Chưa đủ ${minS} ca tối thiểu</h3><ul>${under.map(u=>`<li style="color:#7a5410">${esc(u.name)}: ${u.got}/${minS} ca (do rảnh ít hoặc ca đã đầy)</li>`).join('')}</ul></div>`;
-  if(underToi.length) html+=`<div class="warnbox" style="background:#EFEAFB;border-color:#D6CBF3"><h3 style="color:#5b45a8">Chưa đủ ${minToi} ca tối</h3><ul>${underToi.map(u=>`<li style="color:#4b3a8a">${esc(u.name)}: ${u.got}/${minToi} ca tối (ít bạn đăng ký rảnh buổi tối)</li>`).join('')}</ul></div>`;
+  if(underToi.length){
+    const capRoles=[...new Set(underToi.filter(u=>u.why==='cap').map(u=>u.role))];
+    html+=`<div class="warnbox" style="background:#EFEAFB;border-color:#D6CBF3"><h3 style="color:#5b45a8">Chưa đủ ${minToi} ca tối</h3><ul>${underToi.map(u=>{
+      const why = u.why==='avail' ? `chỉ đăng ký rảnh ${u.availToi} buổi tối`
+                : u.why==='cap'   ? `hết suất — ca tối chỉ có ${u.cap} suất/tuần cho ${u.nRole} bạn ${u.role}`
+                : `ca tối đã đủ người khác`;
+      return `<li style="color:#4b3a8a"><b>${esc(u.name)}</b>: ${u.got}/${minToi} ca tối — ${why}</li>`;
+    }).join('')}</ul>${capRoles.length?`<p style="font-size:12.5px;margin:8px 0 0;color:#4b3a8a">💡 Không thể ai cũng đủ ${minToi} ca tối: số ${capRoles.join('/')} đang nhiều hơn số suất tối. Hạ "Số ca tối tối thiểu" xuống, hoặc tăng định mức ca Tối, hoặc chấp nhận vài bạn ít ca tối hơn.</p>`:''}</div>`;
+  }
   if(!gaps.length&&!under.length&&!underToi.length) html+=`<div class="empty" style="padding:20px"><div class="big">🎉</div>Đủ người mọi ca, chia cân bằng!</div>`;
   html+=`<button class="btn wide" id="okImport" style="margin-top:12px">Xem lịch tuần</button>`;
   document.getElementById('sheet').innerHTML=html;
