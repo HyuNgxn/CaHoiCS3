@@ -306,6 +306,7 @@ function defaultData(){
       minShifts:4,                        // số ca tối thiểu mỗi người/tuần (0 = tắt)
       minToi:2,                           // số ca TỐI tối thiểu mỗi người/tuần (0 = tắt)
       maxSameBuoi:4,                      // tối đa số ca cùng 1 buổi/tuần (tránh làm mãi 1 buổi)
+      maxPerDay:2,                        // tối đa số buổi 1 người/ngày (1 = mỗi ngày chỉ 1 buổi)
       positions:['Pha chế','Phục vụ'],   // Giữ xe là 1 phục vụ được đánh dấu (flag bike)
       // định mức người mỗi ca (period) theo từng vị trí
       req:{
@@ -346,6 +347,7 @@ function migrate(r){
   if(r.settings.minShifts==null) r.settings.minShifts=d.settings.minShifts;
   if(r.settings.minToi==null) r.settings.minToi=d.settings.minToi;
   if(r.settings.maxSameBuoi==null) r.settings.maxSameBuoi=d.settings.maxSameBuoi;
+  if(r.settings.maxPerDay==null) r.settings.maxPerDay=d.settings.maxPerDay;
   // Giữ xe không còn là vị trí -> chuyển thành Phục vụ + flag giữ xe
   if(r.settings.positions.includes('Giữ xe')){
     r.settings.positions=r.settings.positions.filter(p=>p!=='Giữ xe');
@@ -550,6 +552,9 @@ function dayWarnings(mon,dayIdx,dateStr){
   DB.employees.forEach(e=>{
     if(onLeave(dateStr,e.id) && cellShifts(mon,e.id,dayIdx).length)
       w.push(`<b>${e.name}</b> đã xin nghỉ nhưng vẫn được xếp ca.`);
+    // sáng + tối cùng ngày = quá mệt
+    const pks=[]; cellShifts(mon,e.id,dayIdx).forEach(c=>{const t=typeById(c.typeId); if(t)coveredPeriods(t).forEach(k=>{if(!pks.includes(k))pks.push(k);});});
+    if(pks.includes('m')&&pks.includes('e')) w.push(`<b>${e.name}</b> làm cả ca Sáng lẫn ca Tối trong ngày — quá mệt, nên đổi.`);
   });
   return w;
 }
@@ -1015,9 +1020,12 @@ function runAutoSchedule(mon){
   const minS=DB.settings.minShifts||0;
   const minToi=DB.settings.minToi||0;
   const maxSame=DB.settings.maxSameBuoi||99;
+  const maxDay=DB.settings.maxPerDay||2;
   const newWeek={}; const gaps=[];
   const isFree=(id,d,pk)=> avail[id] && avail[id][d] && avail[id][d].includes(pk);
   const busyPeriod=(id,d,pk)=> (newWeek[id]&&newWeek[id][d]||[]).some(c=>coveredPeriods(typeById(c.typeId)).includes(pk));
+  // các buổi đã xếp cho người này trong ngày d
+  const periodsToday=(id,d)=>{ const s=[]; (newWeek[id]&&newWeek[id][d]||[]).forEach(c=>coveredPeriods(typeById(c.typeId)).forEach(k=>{if(!s.includes(k))s.push(k);})); return s; };
   // hôm qua có làm ca tối không (để tránh tối -> sáng hôm sau)
   const lateYesterday=(id,d)=> d>0 && (newWeek[id]&&newWeek[id][d-1]||[]).some(c=>coveredPeriods(typeById(c.typeId)).includes('e'));
   for(let d=0; d<7; d++){
@@ -1027,7 +1035,18 @@ function runAutoSchedule(mon){
       DB.settings.positions.forEach(role=>{
         const need=req[role]||0; let filled=0;
         for(let k=0;k<need;k++){
-          const cands=DB.employees.filter(e=> e.pos===role && !onLeave(ds,e.id) && isFree(e.id,d,p.key) && !busyPeriod(e.id,d,p.key));
+          const eligible=DB.employees.filter(e=> e.pos===role && !onLeave(ds,e.id) && isFree(e.id,d,p.key) && !busyPeriod(e.id,d,p.key));
+          if(!eligible.length) break;
+          // LUẬT CỨNG: không ghép sáng+tối cùng ngày (7h-12h30 rồi 17h30-00h = quá mệt),
+          // không quá maxPerDay buổi/ngày. Không đủ người thì để TRỐNG + báo, chứ không vắt kiệt.
+          const okDay=e=>{
+            const pks=periodsToday(e.id,d);
+            if(pks.length>=maxDay) return false;
+            if(p.key==='m'&&pks.includes('e')) return false;
+            if(p.key==='e'&&pks.includes('m')) return false;
+            return true;
+          };
+          const cands=eligible.filter(okDay);
           if(!cands.length) break;
           // thứ tự ưu tiên: né ca tối hôm qua -> chưa vượt trần cùng buổi ->
           // (ca tối) ai chưa đủ ca tối -> ai chưa đủ ca tối thiểu -> ai ít ca nhất
@@ -1335,6 +1354,10 @@ function renderSettings(){
         <div><b style="font-size:14px">Tối đa ca cùng 1 buổi / tuần</b><div class="muted" style="font-size:12px">Tránh 1 bạn làm mãi 1 buổi cả tuần → xoay vòng</div></div>
         <input id="setMaxSame" inputmode="numeric" value="${DB.settings.maxSameBuoi||0}" style="width:64px;height:44px;text-align:center;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);font-weight:700;font-size:16px">
       </div>
+      <div class="row between" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+        <div><b style="font-size:14px">Tối đa buổi / người / ngày</b><div class="muted" style="font-size:12px">Để <b>1</b> nếu mỗi ngày chỉ làm 1 buổi. App luôn cấm ghép Sáng+Tối cùng ngày.</div></div>
+        <input id="setMaxDay" inputmode="numeric" value="${DB.settings.maxPerDay||2}" style="width:64px;height:44px;text-align:center;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);font-weight:700;font-size:16px">
+      </div>
     </div>
 
     <div class="sec-title">Khung giờ ca &amp; số giờ</div>
@@ -1378,6 +1401,7 @@ function renderSettings(){
   document.getElementById('setMinShifts').onchange=ev=>{DB.settings.minShifts=Math.max(0,parseInt(ev.target.value)||0);save();};
   document.getElementById('setMinToi').onchange=ev=>{DB.settings.minToi=Math.max(0,parseInt(ev.target.value)||0);save();};
   document.getElementById('setMaxSame').onchange=ev=>{DB.settings.maxSameBuoi=Math.max(1,parseInt(ev.target.value)||99);save();};
+  document.getElementById('setMaxDay').onchange=ev=>{DB.settings.maxPerDay=Math.min(3,Math.max(1,parseInt(ev.target.value)||2));save();};
   document.getElementById('setPos').onchange=ev=>{const arr=ev.target.value.split(',').map(s=>s.trim()).filter(Boolean);if(arr.length){DB.settings.positions=arr;save();render();}};
   document.querySelectorAll('[data-editshift]').forEach(b=>b.onclick=()=>openShiftTypeSheet(b.dataset.editshift));
   document.getElementById('addShiftType').onclick=()=>openShiftTypeSheet();

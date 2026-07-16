@@ -1,6 +1,6 @@
 /* Service worker — network-first cho HTML (luôn lấy bản mới khi online),
    cache-first cho ảnh/tĩnh. Tự dọn cache cũ. */
-const CACHE = 'xepca-v10';
+const CACHE = 'xepca-v11';
 const ASSETS = [
   './',
   'index.html',
