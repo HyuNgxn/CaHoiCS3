@@ -149,9 +149,34 @@
   .warnbox ul{margin:0;padding-left:18px}
   .warnbox li{font-size:13.5px;margin:3px 0;color:#7d2622}
 
+  /* ---------- dải tuần mini ---------- */
+  .wstrip{display:flex;gap:3px;margin-top:4px}
+  .wcell{flex:1;text-align:center;border-radius:7px;padding:3px 1px;background:var(--surface-2);border:1px solid var(--line);min-width:0}
+  .wcell .wd{display:block;font-size:9px;color:var(--muted);font-weight:700;line-height:1.2}
+  .wcell .wv{display:block;font-size:11px;font-weight:800;line-height:1.3;white-space:nowrap}
+  .wcell.hl{border-color:var(--brand);background:var(--brand-soft);box-shadow:0 0 0 1px var(--brand)}
+  .wcell .dash{color:var(--line)}
+  .pl{display:inline-block;padding:0 1px;font-weight:800;border-radius:3px}
+  .pl.pm{color:#a9660f}.pl.pa{color:#0f7a6c}.pl.pe{color:#5a3fb8}
+  .legend .pl{background:var(--surface-2);padding:1px 5px;margin-right:4px}
+  /* xem theo người */
+  .erow{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line)}
+  .erow:last-child{border-bottom:0}
+  .erow:active{background:var(--surface-2)}
+  .ename{width:96px;flex:0 0 auto;font-weight:700;font-size:13.5px;min-width:0}
+  .ename small{display:block;color:var(--muted);font-weight:600;font-size:10.5px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .erow .wstrip{flex:1;margin-top:0}
   /* ---------- Today ---------- */
-  .today-hero{background:linear-gradient(155deg,#B5652E,#8A3F13);color:#fff;border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+  .today-hero{background:linear-gradient(155deg,#B5652E,#8A3F13);color:#fff;border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
   .today-hero .dow{font-size:13px;opacity:.85;font-weight:600}
+  .today-hero .nowline{font-size:22px;font-weight:800;letter-spacing:-.02em;margin:3px 0 12px;display:flex;align-items:center;gap:8px}
+  .livedot{width:9px;height:9px;border-radius:50%;background:#7CE0A9;box-shadow:0 0 0 0 rgba(124,224,169,.7);animation:pulse 1.8s infinite;flex:0 0 auto}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(124,224,169,.7)}70%{box-shadow:0 0 0 9px rgba(124,224,169,0)}100%{box-shadow:0 0 0 0 rgba(124,224,169,0)}}
+  .tblock{margin-top:10px;overflow:hidden;transition:opacity .2s}
+  .tblock.dim{opacity:.5}
+  .tblock.live{border-color:var(--brand);box-shadow:0 0 0 2px var(--brand-soft),var(--shadow)}
+  .livetag{font-size:9.5px;font-weight:800;letter-spacing:.06em;background:var(--brand);color:#fff;padding:3px 7px;border-radius:6px}
+  .nm2 i.early{background:#F6DFD3;color:#8f3a17}
   .today-hero .date{font-size:30px;font-weight:800;letter-spacing:-.02em;margin:2px 0 10px}
   .today-hero .stats{display:flex;gap:18px}
   .today-hero .stats div b{display:block;font-size:22px;line-height:1}
@@ -486,9 +511,15 @@ function renderToday(){
   const earlyToday=DB.early.filter(x=>x.date===today);
   const leaveToday=DB.leaves.filter(l=>today>=l.date && today<=(l.dateEnd||l.date));
 
+  // buổi đang diễn ra theo giờ thực
+  const nowMin=now.getHours()*60+now.getMinutes();
+  const curP=PERIODS.find(p=>nowMin>=p.a&&nowMin<p.b)||null;
+  const nextP=curP?null:PERIODS.find(p=>p.a>nowMin)||null;
+
+  const statusTxt=curP?`Đang trong ca ${curP.name}`:(nextP?`Ngoài giờ · sắp tới ca ${nextP.name}`:'Ngoài giờ mở cửa');
   let html=`<div class="today-hero">
-    <div class="dow">${DOW_FULL[dayIdx]}</div>
-    <div class="date">${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()}</div>
+    <div class="dow">${DOW_FULL[dayIdx]} · ${pad(now.getDate())}/${pad(now.getMonth()+1)}</div>
+    <div class="nowline">${curP?`<span class="livedot"></span>`:''}${statusTxt}</div>
     <div class="stats">
       <div><b class="tnum">${working.length}</b><span>lượt ca hôm nay</span></div>
       <div><b class="tnum">${earlyToday.length}</b><span>xin về sớm</span></div>
@@ -500,26 +531,39 @@ function renderToday(){
     el.innerHTML=html; return;
   }
 
-  // warnings
   const warns=dayWarnings(mon,dayIdx,today);
-  if(warns.length){
-    html+=`<div class="warnbox"><h3>⚠️ Cần chú ý hôm nay</h3><ul>${warns.map(w=>`<li>${w}</li>`).join('')}</ul></div>`;
-  }
+  if(warns.length) html+=`<div class="warnbox"><h3>⚠️ Cần chú ý hôm nay</h3><ul>${warns.map(w=>`<li>${w}</li>`).join('')}</ul></div>`;
 
-  // group by period
+  // từng buổi — buổi đang diễn ra nổi bật, còn lại mờ đi
   PERIODS.forEach(p=>{
-    const list=working.filter(w=>coveredPeriods(w.t).includes(p.key));
-    if(!list.length)return;
-    html+=`<div class="period-block"><div class="ph"><span class="dot c-${p.cls}"></span>Ca ${p.name} <span class="muted" style="font-weight:600">· ${list.length} người</span></div><div class="card">`;
-    list.forEach(w=>{
-      const early=earlyToday.find(x=>x.empId===w.e.id);
-      html+=`<div class="worker"><div class="av">${initials(w.e.name)}</div>
-        <div class="info"><b>${w.e.name}</b><span>${w.t.label} · ${w.c.pos||'—'}${w.c.bike?' · 🛵 giữ xe':''}</span></div>
-        ${early?`<span class="pill bg-full">Về ${early.time}</span>`:''}</div>`;
+    const active=curP&&curP.key===p.key;
+    const canon=canonicalShiftFor(p.key);
+    const byRole={}; DB.settings.positions.forEach(r=>byRole[r]=[]);
+    working.forEach(w=>{ if(coveredPeriods(w.t).includes(p.key)) (byRole[w.c.pos]=byRole[w.c.pos]||[]).push(w); });
+    const req=DB.settings.req[p.key]||{};
+    html+=`<div class="tblock card ${active?'live':'dim'}">
+      <div class="rhead"><span class="dot c-${p.cls}"></span>Ca ${p.name}
+        ${active?'<span class="livetag">ĐANG DIỄN RA</span>':''}
+        <span class="time">${canon?canon.label:''}</span></div>`;
+    DB.settings.positions.forEach(role=>{
+      const list=byRole[role]||[]; const need=req[role]||0;
+      const ok=!need||list.length>=need;
+      html+=`<div class="rrow"><div class="rlabel">${role}${need?`<span class="cnt ${ok?'ok':'bad'}">${ok?'✓ ':''}${list.length}/${need}</span>`:''}</div><div class="rchips">`;
+      if(list.length){
+        html+=`<div class="names">`+list.map(w=>{
+          const early=earlyToday.find(x=>x.empId===w.e.id);
+          return `<span class="nm2">${w.c.bike?'🛵 ':''}${esc(w.e.name)}${early?`<i class="early">về ${early.time}</i>`:''}</span>`;
+        }).join('<span class="sep">·</span>')+`</div>`;
+      } else html+=`<span class="nobody">chưa có ai</span>`;
+      html+=`</div></div>`;
     });
-    html+=`</div></div>`;
+    html+=`</div>`;
   });
 
+  if(leaveToday.length){
+    html+=`<div class="sec-title">Nghỉ hôm nay</div><div class="card pad" style="font-size:14px">`+
+      leaveToday.map(l=>{const e=empById(l.empId);return `🌙 <b>${e?esc(e.name):'?'}</b>${l.reason?` <span class="muted">— ${esc(l.reason)}</span>`:''}`;}).join('<br>')+`</div>`;
+  }
   if(working.length===0){
     html+=`<div class="empty" style="margin-top:16px"><div class="big">🌤️</div>Chưa xếp ca cho hôm nay.<br>Vào <b>Lịch tuần</b> để xếp ca.</div>`;
   }
@@ -562,7 +606,7 @@ function dayWarnings(mon,dayIdx,dateStr){
 /* ============================================================
    WEEK GRID  (tính năng chính)
    ============================================================ */
-let selDay=null, editMode=false;
+let selDay=null, editMode=false, weekView='day';   // 'day' | 'emp'
 function renderWeek(){
   const el=document.getElementById('v-week');
   const mon=curMonday; const sun=addDays(mon,6);
@@ -579,6 +623,17 @@ function renderWeek(){
     <button class="icon-btn" id="wToday" title="Về tuần này"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2 2"/></svg></button>
   </div>`;
 
+  // chuyển chế độ xem
+  html+=`<div class="seg" style="margin:8px 0 4px"><button id="vwDay" class="${weekView==='day'?'on':''}">Theo ngày</button><button id="vwEmp" class="${weekView==='emp'?'on':''}">Theo người</button></div>`;
+
+  if(weekView==='emp'){
+    html+=renderEmpWeek(mon)+importActionsHTML();
+    el.innerHTML=html;
+    bindWeekNav(); bindViewSeg(); bindImportActions();
+    document.querySelectorAll('.erow').forEach(r=>r.onclick=()=>{ const d=+r.dataset.jump; if(!isNaN(d)){ selDay=d; weekView='day'; renderWeek(); } });
+    return;
+  }
+
   // thanh chọn ngày
   html+=`<div class="daysel">`;
   for(let d=0;d<7;d++){
@@ -591,7 +646,7 @@ function renderWeek(){
     html+=`<div class="empty" style="padding-bottom:16px"><div class="big">📋</div>Chưa có nhân viên.<br>Nhập từ Google Sheet đăng ký (tự tạo nhân viên),<br>hoặc thêm tay ở tab <b>Nhân viên</b>.</div>`;
     html+=importActionsHTML();
     el.innerHTML=html;
-    bindWeekNav(); bindDaySel(); bindImportActions(); return;
+    bindWeekNav(); bindDaySel(); bindViewSeg(); bindImportActions(); return;
   }
 
   const dDate=addDays(mon,selDay); const dStr=ymd(dDate);
@@ -615,7 +670,7 @@ function renderWeek(){
   html+=importActionsHTML();
 
   el.innerHTML=html;
-  bindWeekNav(); bindDaySel(); bindImportActions();
+  bindWeekNav(); bindDaySel(); bindViewSeg(); bindImportActions();
   bindRoster();
   const be=document.getElementById('btnEdit'); if(be) be.onclick=()=>{editMode=!editMode;renderWeek();};
   const ba=document.getElementById('btnAuto'); if(ba) ba.onclick=autoScheduleBtn;
@@ -624,6 +679,44 @@ function renderWeek(){
 }
 function bindDaySel(){
   document.querySelectorAll('.daysel button').forEach(b=>b.onclick=()=>{selDay=+b.dataset.day;renderWeek();});
+}
+function bindViewSeg(){
+  const a=document.getElementById('vwDay'), b=document.getElementById('vwEmp');
+  if(a) a.onclick=()=>{weekView='day';renderWeek();};
+  if(b) b.onclick=()=>{weekView='emp';renderWeek();};
+}
+/* --- xem theo người: mỗi bạn 1 dòng × 7 ngày --- */
+function renderEmpWeek(mon){
+  if(!DB.employees.length) return `<div class="empty"><div class="big">📋</div>Chưa có nhân viên.</div>`;
+  const todayStr=ymd(new Date());
+  let hl=-1; for(let d=0;d<7;d++) if(ymd(addDays(mon,d))===todayStr) hl=d;
+  let h=`<div class="card" style="margin-top:10px;overflow:hidden">`;
+  DB.employees.forEach(e=>{
+    let n=0; for(let d=0;d<7;d++) n+=cellShifts(mon,e.id,d).length;
+    const hrs=weekHours(mon,e.id);
+    const low=DB.settings.minShifts&&n<DB.settings.minShifts;
+    h+=`<div class="erow"><div class="ename">${esc(e.name)}<small>${esc(e.pos||'')} · <span class="${low?'danger-text':''}">${n} ca</span> · ${fmtH(hrs)}</small></div>${empWeekStrip(mon,e.id,hl)}</div>`;
+  });
+  h+=`</div><div class="legend" style="margin-top:10px">
+    <span><span class="pl pm">S</span>Sáng</span><span><span class="pl pa">C</span>Chiều</span><span><span class="pl pe">T</span>Tối</span>
+    <span class="muted">Bấm 1 dòng để về ngày hôm nay</span></div>`;
+  return h;
+}
+/* --- các buổi của 1 người trong 1 ngày --- */
+function periodsOf(mon,empId,day){
+  const s=[]; cellShifts(mon,empId,day).forEach(c=>{const t=typeById(c.typeId); if(t)coveredPeriods(t).forEach(k=>{if(!s.includes(k))s.push(k);});});
+  return s;
+}
+const PL={m:'S',a:'C',e:'T'};
+/* --- dải 7 ngày của 1 người (xem nhanh cả tuần) --- */
+function empWeekStrip(mon,empId,hlDay){
+  let h='<div class="wstrip">';
+  for(let d=0;d<7;d++){
+    const pks=periodsOf(mon,empId,d);
+    const txt=pks.length?pks.map(k=>`<span class="pl p${k}">${PL[k]}</span>`).join(''):'<span class="dash">–</span>';
+    h+=`<div class="wcell ${pks.length?'has':'none'} ${d===hlDay?'hl':''}"><span class="wd">${DOW[d]}</span><span class="wv">${txt}</span></div>`;
+  }
+  return h+'</div>';
 }
 function renderPeriodBlock(mon,day,p){
   const canon=canonicalShiftFor(p.key);
@@ -691,8 +784,17 @@ function openAddSheet(day,pk,role){
   if(!list.length) html+=`<div class="empty" style="padding:18px">Mọi nhân viên đều đã có ca buổi này.</div>`;
   else{ html+=`<div class="existing">`+list.map(e=>{
       const leave=onLeave(ymd(addDays(mon,day)),e.id); const free=isFree(e.id);
-      const sub=leave?'<span class="danger-text">🌙 đã xin nghỉ</span>':(e.pos||'');
-      return `<button class="exrow" data-pick="${e.id}" style="width:100%;text-align:left"><div class="av" style="width:32px;height:32px;font-size:12px;border-radius:50%;background:${free?'#D8F0EC':'var(--brand-soft)'};color:var(--brand-ink);display:grid;place-items:center;font-weight:800">${initials(e.name)}</div><div style="flex:1"><b>${esc(e.name)}</b><div class="muted" style="font-size:12px">${sub}</div></div>${free?'<span class="pill bg-a">✓ rảnh</span>':''}</button>`;
+      // bối cảnh: hôm qua làm gì + tuần này mấy ca + có kẹt sáng/tối hôm nay không
+      const yest= day>0? periodsOf(mon,e.id,day-1) : [];
+      const yTxt= day>0 ? (yest.length? 'hôm qua: '+yest.map(k=>({m:'Sáng',a:'Chiều',e:'Tối'}[k])).join('+') : 'hôm qua: nghỉ') : '';
+      let wk=0; for(let d2=0;d2<7;d2++) wk+=cellShifts(mon,e.id,d2).length;
+      const today=periodsOf(mon,e.id,day);
+      const clash=(pk==='m'&&today.includes('e'))||(pk==='e'&&today.includes('m'));
+      const lateY= pk==='m' && yest.includes('e');
+      const bits=[]; if(yTxt)bits.push(yTxt); bits.push('tuần: '+wk+' ca');
+      const sub=leave?'<span class="danger-text">🌙 đã xin nghỉ</span>':bits.join(' · ');
+      const flag= clash?'<span class="pill bg-full">⚠️ kẹt Sáng+Tối</span>' : (lateY?'<span class="pill bg-e">⚠️ tối hôm qua</span>':(free?'<span class="pill bg-a">✓ rảnh</span>':''));
+      return `<button class="exrow" data-pick="${e.id}" style="width:100%;text-align:left"><div class="av" style="width:32px;height:32px;font-size:12px;border-radius:50%;background:${free?'#D8F0EC':'var(--brand-soft)'};color:var(--brand-ink);display:grid;place-items:center;font-weight:800">${initials(e.name)}</div><div style="flex:1;min-width:0"><b>${esc(e.name)}</b><div class="muted" style="font-size:11.5px">${sub}</div>${empWeekStrip(mon,e.id,day)}</div>${flag}</button>`;
     }).join('')+`</div>`; }
   document.getElementById('sheet').innerHTML=html;
   document.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{
@@ -710,6 +812,7 @@ function openAssignSheet(day,empId,ci){
   const cur=typeById(c.typeId);
   const covers=DB.shiftTypes.filter(t=>{const cp=coveredPeriods(t); return cur?cp.some(k=>coveredPeriods(cur).includes(k)):true;});
   let html=`<div class="grip"></div><h2>${esc(e.name)}</h2><div class="sub">${DOW_FULL[(addDays(mon,day).getDay()+6)%7]}, ${dmShort(addDays(mon,day))} · ${cur?cur.label:''} · ${esc(c.pos||'')}</div>`;
+  html+=`<div class="field"><label>Cả tuần của ${esc(e.name)}</label>${empWeekStrip(mon,e.id,day)}</div>`;
   html+=`<div class="field"><label>Khung giờ</label><div class="opt-grid">`+
     covers.map(t=>`<button class="opt ${t.id===c.typeId?'on':''}" data-t="${t.id}"><span class="dot c-${shiftClass(t)}"></span><span>${t.label}<small>${fmtH(t.hours)}</small></span></button>`).join('')+`</div></div>`;
   html+=`<div class="field"><label>Vị trí</label><div class="seg" id="posSeg">`+
