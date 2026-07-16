@@ -1,17 +1,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
-<meta name="theme-color" content="#A9541F">
+<meta name="theme-color" content="#8C2018">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Xếp Ca">
+<meta name="apple-mobile-web-app-title" content="Cá Hồi">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<title>Xếp Ca — Cơ sở 3</title>
+<title>Cá Hồi — Xếp Ca</title>
 <style>
   :root{
-    --bg:#F4ECE1; --surface:#FFFDF9; --surface-2:#FBF5EC;
-    --ink:#2E211B; --muted:#8C7C6E; --line:#E7DBCB;
-    --brand:#A9541F; --brand-ink:#8A3F13; --brand-soft:#F3E1D2;
+    --bg:#F5EDE7; --surface:#FFFCFA; --surface-2:#FBF3EF;
+    --ink:#2B1C19; --muted:#8B7770; --line:#E9DAD3;
+    --brand:#8C2018; --brand-ink:#6B1610; --brand-soft:#F7E2DE;
     --m:#E0912F; --a:#2E9E8F; --e:#7C5AC9; --full:#C4552A; --off:#B9AC9C;
     --danger:#C6362F; --danger-soft:#FBE4E2; --ok:#2E9E8F;
     --shadow:0 1px 2px rgba(46,33,27,.06),0 6px 20px rgba(46,33,27,.08);
@@ -42,10 +42,11 @@
     display:flex;align-items:center;gap:12px;
   }
   header.top .cup{
-    width:38px;height:38px;border-radius:11px;flex:0 0 auto;
-    background:linear-gradient(160deg,#3B261E,#78482C);
-    display:grid;place-items:center;font-size:20px;box-shadow:var(--shadow)
+    width:40px;height:40px;border-radius:12px;flex:0 0 auto;
+    background:linear-gradient(160deg,#A82A1E,#6B1610);
+    display:grid;place-items:center;box-shadow:var(--shadow)
   }
+  header.top .ttl b{font-size:17px}
   header.top .ttl{flex:1;min-width:0}
   header.top .ttl b{display:block;font-size:19px;letter-spacing:-.02em}
   header.top .ttl span{display:block;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -167,7 +168,7 @@
   .ename small{display:block;color:var(--muted);font-weight:600;font-size:10.5px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .erow .wstrip{flex:1;margin-top:0}
   /* ---------- Today ---------- */
-  .today-hero{background:linear-gradient(155deg,#B5652E,#8A3F13);color:#fff;border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
+  .today-hero{background:linear-gradient(155deg,#A82A1E,#6B1610);color:#fff;border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
   .today-hero .dow{font-size:13px;opacity:.85;font-weight:600}
   .today-hero .nowline{font-size:22px;font-weight:800;letter-spacing:-.02em;margin:3px 0 12px;display:flex;align-items:center;gap:8px}
   .livedot{width:9px;height:9px;border-radius:50%;background:#7CE0A9;box-shadow:0 0 0 0 rgba(124,224,169,.7);animation:pulse 1.8s infinite;flex:0 0 auto}
@@ -232,6 +233,17 @@
   .exrow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line)}
   .exrow .x{margin-left:auto;color:var(--danger);font-weight:700;font-size:20px;width:30px;height:30px;display:grid;place-items:center}
 
+  /* menu thao tác */
+  .menu{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:4px}
+  .mrow{display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:1px solid var(--line);text-align:left;background:var(--surface)}
+  .mrow:last-child{border-bottom:0}
+  .mrow:active{background:var(--surface-2)}
+  .mrow.hi{background:var(--brand-soft)}
+  .mic{width:30px;height:30px;border-radius:9px;background:var(--surface-2);display:grid;place-items:center;font-size:15px;flex:0 0 auto}
+  .mrow.hi .mic{background:#fff}
+  .mtx{flex:1;min-width:0}
+  .mtx b{display:block;font-size:14.5px;font-weight:700}
+  .mtx small{display:block;font-size:11.5px;color:var(--muted);margin-top:1px}
   .toast{position:fixed;left:50%;bottom:calc(var(--safe-b) + 90px);transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;font-size:14px;font-weight:600;z-index:80;opacity:0;transition:.25s;pointer-events:none;box-shadow:var(--shadow)}
   .toast.show{opacity:1;transform:translateX(-50%)}
   /* day selector */
@@ -249,8 +261,8 @@
   /* roster blocks */
   .rblock{margin-top:10px;overflow:hidden}
   .rblock.lack{border-color:#EBC9C4}
-  .rblock .rhead{display:flex;align-items:center;gap:9px;font-weight:800;font-size:15.5px;padding:11px 14px 9px;border-bottom:1px solid var(--line)}
-  .rblock .rhead .time{margin-left:auto;color:var(--muted);font-weight:600;font-size:12.5px}
+  .rhead{display:flex;align-items:center;gap:9px;font-weight:800;font-size:15.5px;padding:11px 14px 9px;border-bottom:1px solid var(--line)}
+  .rhead .time{margin-left:auto;color:var(--muted);font-weight:600;font-size:12.5px;white-space:nowrap}
   .rrow{display:flex;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);align-items:flex-start}
   .rrow:last-child{border-bottom:0}
   .rrow .rlabel{width:82px;flex:0 0 auto;font-weight:700;font-size:13.5px;padding-top:3px}
@@ -285,8 +297,13 @@
 
 <div id="app">
   <header class="top">
-    <div class="cup">☕️</div>
-    <div class="ttl"><b id="brandName">Xếp Ca</b><span id="brandSub">Cơ sở 3</span></div>
+    <div class="cup" aria-hidden="true">
+      <svg viewBox="0 0 64 40" width="30" height="19"><g fill="none" stroke="#F7E2DE" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 20c8-11 24-14 34-6 4 3 7 6 8 6-1 0-4 3-8 6-10 8-26 5-34-6z"/>
+        <path d="M18 20L7 11v18z"/><path d="M32 10c3-3 7-4 10-3"/><circle cx="50" cy="18" r="1.6" fill="#F7E2DE" stroke="none"/>
+      </g></svg>
+    </div>
+    <div class="ttl"><b id="brandName">Tiệm Cà Phê Cá Hồi</b><span id="brandSub">Cơ sở 3</span></div>
     <button class="icon-btn" id="btnSettings" aria-label="Cài đặt">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
@@ -313,6 +330,7 @@
 <div class="backdrop" id="backdrop"></div>
 <div class="sheet" id="sheet"></div>
 <div class="toast" id="toast"></div>
+<input type="file" id="importFile" accept=".csv,text/csv,application/vnd.ms-excel" style="display:none">
 
 <script>
 /* ============================================================
@@ -485,8 +503,8 @@ document.getElementById('fabBtn').onclick=()=>{
    RENDER dispatch
    ============================================================ */
 function render(){
-  document.getElementById('brandName').textContent='Xếp Ca';
-  document.getElementById('brandSub').textContent=DB.settings.branch||'';
+  document.getElementById('brandName').textContent='Tiệm Cà Phê Cá Hồi';
+  document.getElementById('brandSub').textContent=(DB.settings.branch||'')+' · Xếp ca';
   const fab=document.getElementById('fab');
   fab.style.display=(curTab==='staff'||curTab==='leave')?'block':'none';
   if(curTab==='today') renderToday();
@@ -621,15 +639,16 @@ function renderWeek(){
       <button id="wNext" aria-label="Tuần sau"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
     </div>
     <button class="icon-btn" id="wToday" title="Về tuần này"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2 2"/></svg></button>
+    <button class="icon-btn" id="wMore" title="Thao tác"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
   </div>`;
 
   // chuyển chế độ xem
   html+=`<div class="seg" style="margin:8px 0 4px"><button id="vwDay" class="${weekView==='day'?'on':''}">Theo ngày</button><button id="vwEmp" class="${weekView==='emp'?'on':''}">Theo người</button></div>`;
 
   if(weekView==='emp'){
-    html+=renderEmpWeek(mon)+importActionsHTML();
+    html+=renderEmpWeek(mon);
     el.innerHTML=html;
-    bindWeekNav(); bindViewSeg(); bindImportActions();
+    bindWeekNav(); bindViewSeg();
     document.querySelectorAll('.erow').forEach(r=>r.onclick=()=>{ const d=+r.dataset.jump; if(!isNaN(d)){ selDay=d; weekView='day'; renderWeek(); } });
     return;
   }
@@ -643,10 +662,12 @@ function renderWeek(){
   html+=`</div>`;
 
   if(DB.employees.length===0){
-    html+=`<div class="empty" style="padding-bottom:16px"><div class="big">📋</div>Chưa có nhân viên.<br>Nhập từ Google Sheet đăng ký (tự tạo nhân viên),<br>hoặc thêm tay ở tab <b>Nhân viên</b>.</div>`;
-    html+=importActionsHTML();
+    html+=`<div class="empty" style="padding-bottom:8px"><div class="big">📋</div>Chưa có nhân viên.<br>Đồng bộ đăng ký từ Google Sheet để app tự tạo,<br>hoặc thêm tay ở tab <b>Nhân viên</b>.</div>
+      <button class="btn wide" id="btnSyncEmpty" style="margin-top:4px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg>Đồng bộ từ Google Sheet</button>`;
     el.innerHTML=html;
-    bindWeekNav(); bindDaySel(); bindViewSeg(); bindImportActions(); return;
+    bindWeekNav(); bindDaySel(); bindViewSeg();
+    const se=document.getElementById('btnSyncEmpty'); if(se) se.onclick=syncFromSheet;
+    return;
   }
 
   const dDate=addDays(mon,selDay); const dStr=ymd(dDate);
@@ -662,20 +683,10 @@ function renderWeek(){
     html+=renderPeriodBlock(mon,selDay,p);
   });
 
-  // actions
-  const hasAvail=DB.availability&&DB.availability[weekKey(mon)]&&Object.keys(DB.availability[weekKey(mon)]).length;
-  if(hasAvail) html+=`<button class="btn wide" id="btnAuto" style="margin-top:16px;background:#2E7D5B"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/></svg>Tự xếp lại ca (cân bằng)</button>`;
-  html+=`<button class="btn ghost wide" id="btnCopy" style="margin-top:${hasAvail?10:16}px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Chép lịch tuần trước</button>
-  <button class="btn wide" id="btnExport" style="margin-top:10px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>Xuất ảnh gửi Zalo</button>`;
-  html+=importActionsHTML();
-
   el.innerHTML=html;
-  bindWeekNav(); bindDaySel(); bindViewSeg(); bindImportActions();
+  bindWeekNav(); bindDaySel(); bindViewSeg();
   bindRoster();
   const be=document.getElementById('btnEdit'); if(be) be.onclick=()=>{editMode=!editMode;renderWeek();};
-  const ba=document.getElementById('btnAuto'); if(ba) ba.onclick=autoScheduleBtn;
-  document.getElementById('btnCopy').onclick=copyPrevWeek;
-  document.getElementById('btnExport').onclick=exportWeekImage;
 }
 function bindDaySel(){
   document.querySelectorAll('.daysel button').forEach(b=>b.onclick=()=>{selDay=+b.dataset.day;renderWeek();});
@@ -859,7 +870,8 @@ function weekLabel(mon){
 function bindWeekNav(){
   document.getElementById('wPrev').onclick=()=>{curMonday=addDays(curMonday,-7);renderWeek();};
   document.getElementById('wNext').onclick=()=>{curMonday=addDays(curMonday,7);renderWeek();};
-  document.getElementById('wToday').onclick=()=>{curMonday=mondayOf(new Date());renderWeek();};
+  document.getElementById('wToday').onclick=()=>{curMonday=mondayOf(new Date());selDay=null;renderWeek();};
+  const m=document.getElementById('wMore'); if(m) m.onclick=openActionsSheet;
 }
 function bindGridCells(){
   document.querySelectorAll('#v-week td.cell').forEach(td=>{
@@ -1019,7 +1031,7 @@ async function syncFromSheet(){
   if(!link){ toast('Chưa có link Sheet — vào Cài đặt để dán'); go('settings'); return; }
   const url=sheetCsvUrl(link);
   if(!url){ toast('Link Google Sheet không hợp lệ'); return; }
-  const btn=document.getElementById('btnSync'); if(btn){btn.disabled=true;btn.style.opacity=.6;btn.innerHTML='Đang tải từ Google Sheet…';}
+  toast('Đang tải từ Google Sheet…');
   let text;
   try{
     const r=await fetch(url+'&_='+Date.now(),{cache:'no-store'});
@@ -1032,19 +1044,29 @@ async function syncFromSheet(){
   try{ processRegistration(text); }
   catch(e){ alert('Lấy được dữ liệu nhưng chưa đọc được: '+e.message); renderWeek(); }
 }
-function importActionsHTML(){
+/* --- menu thao tác (gom hết nút vào 1 chỗ) --- */
+function openActionsSheet(){
+  const mon=curMonday, wk=weekKey(mon);
+  const hasAvail=!!(DB.availability&&DB.availability[wk]&&Object.keys(DB.availability[wk]).length);
   const hasLink=!!(DB.settings.sheetUrl||'').trim();
-  let h='';
-  if(hasLink) h+=`<button class="btn wide" id="btnSync" style="margin-top:10px;background:#2E7D5B"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg>Đồng bộ từ Google Sheet</button>`;
-  h+=`<button class="btn ghost wide" id="btnImport" style="margin-top:10px">${hasLink?'Hoặc nhập từ file CSV':'Nhập đăng ký từ file CSV'}</button>
-  <input type="file" id="importFile" accept=".csv,text/csv,application/vnd.ms-excel" style="display:none">
-  <p style="text-align:center;margin:12px 0 0;font-size:13px"><a class="link" href="DangKyCa-CoSo3.xlsx" download>⬇︎ Tải file mẫu đăng ký</a></p>`;
-  return h;
-}
-function bindImportActions(){
-  const s=document.getElementById('btnSync'); if(s) s.onclick=syncFromSheet;
-  const b=document.getElementById('btnImport'); if(b) b.onclick=()=>document.getElementById('importFile').click();
-  const f=document.getElementById('importFile'); if(f) f.onchange=onImportFile;
+  const items=[
+    {id:'aSync', ic:'🔄', t:'Đồng bộ từ Google Sheet', s:'Lấy đăng ký rảnh mới nhất rồi tự xếp', on:hasLink, hi:1},
+    {id:'aAuto', ic:'✨', t:'Tự xếp lại ca (cân bằng)', s:'Xếp lại tuần này từ đăng ký đã có', on:hasAvail},
+    {id:'aExport', ic:'🖼️', t:'Xuất ảnh gửi Zalo', s:'Tạo ảnh lịch tuần gửi nhóm', on:true},
+    {id:'aCopy', ic:'📋', t:'Chép lịch tuần trước', s:'Dùng lại lịch tuần liền trước', on:true},
+    {id:'aCsv', ic:'📁', t:'Nhập từ file CSV', s:'Khi không dùng link Sheet', on:true},
+    {id:'aTpl', ic:'⬇︎', t:'Tải file mẫu đăng ký', s:'Gửi cho nhân viên điền', on:true}
+  ].filter(x=>x.on);
+  let html=`<div class="grip"></div><h2>Thao tác</h2><div class="sub">Tuần ${dmShort(mon)} – ${dmShort(addDays(mon,6))}</div><div class="menu">`;
+  items.forEach(x=>{ html+=`<button class="mrow ${x.hi?'hi':''}" data-a="${x.id}"><span class="mic">${x.ic}</span><span class="mtx"><b>${x.t}</b><small>${x.s}</small></span><span class="chev">›</span></button>`; });
+  html+=`</div>`;
+  document.getElementById('sheet').innerHTML=html;
+  const go2=(fn)=>{closeSheet();setTimeout(fn,180);};
+  const map={ aSync:syncFromSheet, aAuto:autoScheduleBtn, aExport:exportWeekImage, aCopy:copyPrevWeek,
+    aCsv:()=>document.getElementById('importFile').click(),
+    aTpl:()=>{const a=document.createElement('a');a.href='DangKyCa-CoSo3.xlsx';a.download='DangKyCa-CoSo3.xlsx';a.click();} };
+  document.querySelectorAll('.mrow').forEach(b=>b.onclick=()=>go2(map[b.dataset.a]));
+  openSheet();
 }
 function processRegistration(text){
   const rows=parseCSV(text).filter(r=>r.some(c=>c&&c.trim()!==''));
@@ -1205,13 +1227,13 @@ function exportWeekImage(){
   const H=titleH+headH+rowH*emps.length+footH+padX;
   const cv=document.createElement('canvas'); cv.width=W*scale; cv.height=H*scale;
   const x=cv.getContext('2d'); x.scale(scale,scale);
-  const col={bg:'#F4ECE1',surf:'#FFFDF9',ink:'#2E211B',muted:'#8C7C6E',line:'#E7DBCB',brand:'#A9541F',
+  const col={bg:'#F5EDE7',surf:'#FFFCFA',ink:'#2B1C19',muted:'#8B7770',line:'#E9DAD3',brand:'#8C2018',
     m:'#FBEBD3',a:'#D8F0EC',e:'#E9E2FA',full:'#F6DFD3',off:'#ECE6DE',
     mT:'#8a5410',aT:'#186b60',eT:'#4b34a0',fullT:'#8f3a17',offT:'#7a6d5f'};
   x.fillStyle=col.bg; x.fillRect(0,0,W,H);
   // title
-  x.fillStyle=col.brand; x.font='800 24px -apple-system,system-ui,sans-serif'; x.textBaseline='top';
-  x.fillText('☕ Lịch làm — '+(DB.settings.branch||''),padX,padX);
+  x.fillStyle=col.brand; x.font='800 23px -apple-system,system-ui,sans-serif'; x.textBaseline='top';
+  x.fillText('TIỆM CÀ PHÊ CÁ HỒI — '+(DB.settings.branch||''),padX,padX);
   x.fillStyle=col.muted; x.font='600 15px -apple-system,system-ui,sans-serif';
   x.fillText(`Tuần ${dmShort(mon)} – ${dmShort(sun)}`,padX,padX+34);
   const ox=padX, oy=titleH;
@@ -1257,7 +1279,7 @@ function exportWeekImage(){
   x.beginPath();x.moveTo(ox,oy);x.lineTo(ox+nameW+colW*7,oy);x.stroke();
   // footer
   x.fillStyle=col.muted; x.font='600 12px system-ui,sans-serif';
-  x.fillText('Tạo bằng app Xếp Ca',ox,oy+headH+rowH*emps.length+12);
+  x.fillText('Tiệm Cà Phê Cá Hồi · app Xếp Ca',ox,oy+headH+rowH*emps.length+12);
 
   cv.toBlob(blob=>{
     const file=new File([blob],`lich-tuan-${dmShort(mon).replace('/','-')}.png`,{type:'image/png'});
@@ -1593,5 +1615,6 @@ if('serviceWorker' in navigator){
 }
 
 /* ---------- go ---------- */
+document.getElementById('importFile').onchange=onImportFile;
 go('week');
 </script>
