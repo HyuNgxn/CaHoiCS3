@@ -358,11 +358,12 @@ function defaultData(){
       maxPerDay:1,                        // tối đa số buổi 1 người/ngày (vòng 1)
       coverFirst:true,                    // ưu tiên phủ đủ ca: vòng 2 cho làm 2 buổi/ngày khi thiếu người
       positions:['Pha chế','Phục vụ'],   // Giữ xe là 1 phục vụ được đánh dấu (flag bike)
-      // định mức người mỗi ca (period) theo từng vị trí
+      // định mức người mỗi CA (theo khung giờ) × vị trí — keyed theo shiftType.id
       req:{
-        m:{'Pha chế':2,'Phục vụ':3},
-        a:{'Pha chế':2,'Phục vụ':2},
-        e:{'Pha chế':2,'Phục vụ':3}
+        s1:{'Pha chế':2,'Phục vụ':3},
+        s2:{'Pha chế':2,'Phục vụ':2},
+        s3:{'Pha chế':2,'Phục vụ':3},
+        s4:{'Pha chế':1,'Phục vụ':2}
       }
     },
     shiftTypes:[
@@ -411,6 +412,15 @@ function migrate(r){
     })));
   }
   r.shiftTypes=r.shiftTypes||d.shiftTypes;
+  // đổi định mức theo buổi (m/a/e) -> theo từng CA (shiftType.id)
+  if(r.settings.req && (r.settings.req.m||r.settings.req.a||r.settings.req.e)){
+    const old=r.settings.req; const nu={};
+    r.shiftTypes.forEach(st=>{
+      const canon=canonicalShiftFor2(r.shiftTypes, coveredPeriods(st)[0]);
+      nu[st.id] = (canon && canon.id===st.id) ? Object.assign({}, old[coveredPeriods(st)[0]]||{}) : {};
+    });
+    r.settings.req=nu;
+  }
   r.employees=r.employees||[];
   r.schedule=r.schedule||{};
   r.leaves=r.leaves||[];
@@ -457,10 +467,21 @@ function shiftClass(st){ // color class by span
   return 'off';
 }
 // khung giờ chuẩn cho một buổi (dùng khi nhập đăng ký): chọn ca phủ đúng buổi đó, dài nhất
-function canonicalShiftFor(pk){
-  const cands=DB.shiftTypes.filter(t=>{const c=coveredPeriods(t);return c.length===1&&c[0]===pk;});
-  if(!cands.length){ const any=DB.shiftTypes.filter(t=>coveredPeriods(t).includes(pk)); if(any.length) return any.sort((a,b)=>b.hours-a.hours)[0]; return null; }
-  return cands.sort((a,b)=>b.hours-a.hours)[0];
+function canonicalShiftFor2(list,pk){
+  const cands=list.filter(t=>{const c=coveredPeriods(t);return c.length===1&&c[0]===pk;});
+  if(!cands.length){ const any=list.filter(t=>coveredPeriods(t).includes(pk)); if(any.length) return any.slice().sort((a,b)=>b.hours-a.hours)[0]; return null; }
+  return cands.slice().sort((a,b)=>b.hours-a.hours)[0];
+}
+function canonicalShiftFor(pk){ return canonicalShiftFor2(DB.shiftTypes,pk); }
+// định mức của 1 ca
+function reqFor(st){ return (DB.settings.req[st.id])||{}; }
+// người có rảnh làm ca này không (rảnh mọi buổi ca đó phủ)
+function isFreeForShift(avail,id,d,st){ return coveredPeriods(st).every(pk=> avail[id]&&avail[id][d]&&avail[id][d].includes(pk)); }
+// {role:count} đã xếp cho 1 ca cụ thể trong 1 ngày
+function shiftAssigned(mon,day,stId){
+  const m={};
+  DB.employees.forEach(e=>cellShifts(mon,e.id,day).forEach(c=>{ if(c.typeId===stId){ const r=c.pos||'(?)'; m[r]=(m[r]||0)+1; } }));
+  return m;
 }
 function typeById(id){return DB.shiftTypes.find(s=>s.id===id);}
 function empById(id){return DB.employees.find(e=>e.id===id);}
@@ -539,12 +560,13 @@ function renderToday(){
   const earlyToday=DB.early.filter(x=>x.date===today);
   const leaveToday=DB.leaves.filter(l=>today>=l.date && today<=(l.dateEnd||l.date));
 
-  // buổi đang diễn ra theo giờ thực
+  // ca đang diễn ra theo giờ thực (dựa khung giờ của từng ca)
   const nowMin=now.getHours()*60+now.getMinutes();
-  const curP=PERIODS.find(p=>nowMin>=p.a&&nowMin<p.b)||null;
-  const nextP=curP?null:PERIODS.find(p=>p.a>nowMin)||null;
-
-  const statusTxt=curP?`Đang trong ca ${curP.name}`:(nextP?`Ngoài giờ · sắp tới ca ${nextP.name}`:'Ngoài giờ mở cửa');
+  const inRange=st=>{const r=shiftRange(st); return r && nowMin>=r[0] && nowMin<r[1];};
+  const activeShifts=DB.shiftTypes.filter(inRange);
+  const nextSt=activeShifts.length?null:DB.shiftTypes.filter(st=>{const r=shiftRange(st);return r&&r[0]>nowMin;}).sort((a,b)=>shiftRange(a)[0]-shiftRange(b)[0])[0];
+  const curP=activeShifts.length?PERIODS.find(p=>coveredPeriods(activeShifts[0]).includes(p.key)):null;
+  const statusTxt=activeShifts.length?`Đang trong ca ${activeShifts.map(s=>s.label).join(' + ')}`:(nextSt?`Ngoài giờ · sắp tới ca ${nextSt.label}`:'Ngoài giờ mở cửa');
   let html=`<div class="today-hero">
     <div class="dow">${DOW_FULL[dayIdx]} · ${pad(now.getDate())}/${pad(now.getMonth()+1)}</div>
     <div class="nowline">${curP?`<span class="livedot"></span>`:''}${statusTxt}</div>
@@ -562,17 +584,17 @@ function renderToday(){
   const warns=dayWarnings(mon,dayIdx,today);
   if(warns.length) html+=`<div class="warnbox"><h3>⚠️ Cần chú ý hôm nay</h3><ul>${warns.map(w=>`<li>${w}</li>`).join('')}</ul></div>`;
 
-  // từng buổi — buổi đang diễn ra nổi bật, còn lại mờ đi
-  PERIODS.forEach(p=>{
-    const active=curP&&curP.key===p.key;
-    const canon=canonicalShiftFor(p.key);
+  // từng CA — ca đang diễn ra nổi bật, còn lại mờ đi
+  DB.shiftTypes.forEach(st=>{
+    const active=activeShifts.some(s=>s.id===st.id);
+    const cls=shiftClass(st);
     const byRole={}; DB.settings.positions.forEach(r=>byRole[r]=[]);
-    working.forEach(w=>{ if(coveredPeriods(w.t).includes(p.key)) (byRole[w.c.pos]=byRole[w.c.pos]||[]).push(w); });
-    const req=DB.settings.req[p.key]||{};
+    working.forEach(w=>{ if(w.c.typeId===st.id) (byRole[w.c.pos]=byRole[w.c.pos]||[]).push(w); });
+    const req=reqFor(st);
     html+=`<div class="tblock card ${active?'live':'dim'}">
-      <div class="rhead"><span class="dot c-${p.cls}"></span>Ca ${p.name}
+      <div class="rhead"><span class="dot c-${cls}"></span>${st.label}
         ${active?'<span class="livetag">ĐANG DIỄN RA</span>':''}
-        <span class="time">${canon?canon.label:''}</span></div>`;
+        <span class="time">${fmtH(st.hours)}</span></div>`;
     DB.settings.positions.forEach(role=>{
       const list=byRole[role]||[]; const need=req[role]||0;
       const ok=!need||list.length>=need;
@@ -597,28 +619,22 @@ function renderToday(){
   }
   el.innerHTML=html;
 }
-// đếm số người theo vị trí trong một buổi của một ngày -> {role:count}
-function staffCount(mon,dayIdx,pk){
+// đếm số người theo vị trí trong 1 CA của 1 ngày -> {role:count}
+function staffCount(mon,dayIdx,stId){
   const m={};
-  DB.employees.forEach(e=>{
-    cellShifts(mon,e.id,dayIdx).forEach(c=>{
-      const t=typeById(c.typeId);
-      if(t&&coveredPeriods(t).includes(pk)){ const r=c.pos||'(chưa rõ)'; m[r]=(m[r]||0)+1; }
-    });
-  });
+  DB.employees.forEach(e=>cellShifts(mon,e.id,dayIdx).forEach(c=>{ if(c.typeId===stId){ const r=c.pos||'(?)'; m[r]=(m[r]||0)+1; } }));
   return m;
 }
 function dayWarnings(mon,dayIdx,dateStr){
   const w=[];
-  PERIODS.forEach(p=>{
-    const req=DB.settings.req[p.key]||{};
-    const have=staffCount(mon,dayIdx,p.key);
-    // chỉ báo khi buổi này đã có người (đã xếp) nhưng thiếu vị trí nào đó
+  DB.shiftTypes.forEach(st=>{
+    const req=reqFor(st);
+    const have=staffCount(mon,dayIdx,st.id);
     const total=Object.values(have).reduce((a,b)=>a+b,0);
-    if(!total) return;
+    if(!total) return;   // chỉ báo khi ca đã có người mà thiếu vị trí nào đó
     Object.keys(req).forEach(role=>{
       const need=req[role], got=have[role]||0;
-      if(got<need) w.push(`Ca <b>${p.name}</b> thiếu <b>${role}</b>: ${got}/${need}.`);
+      if(got<need) w.push(`Ca <b>${st.label}</b> thiếu <b>${role}</b>: ${got}/${need}.`);
     });
   });
   DB.employees.forEach(e=>{
@@ -688,9 +704,9 @@ function renderWeek(){
   const dw=dayWarnings(mon,selDay,dStr);
   if(dw.length) html+=`<div class="warnbox"><h3>⚠️ Ngày ${DOW[selDay]} cần chú ý</h3><ul>${dw.map(w=>`<li>${w}</li>`).join('')}</ul></div>`;
 
-  // từng buổi
-  PERIODS.forEach(p=>{
-    html+=renderPeriodBlock(mon,selDay,p);
+  // từng CA (khung giờ)
+  DB.shiftTypes.forEach(st=>{
+    html+=renderShiftBlock(mon,selDay,st);
   });
 
   el.innerHTML=html;
@@ -739,21 +755,20 @@ function empWeekStrip(mon,empId,hlDay){
   }
   return h+'</div>';
 }
-function renderPeriodBlock(mon,day,p){
-  const canon=canonicalShiftFor(p.key);
-  // gom theo vị trí
+function renderShiftBlock(mon,day,st){
+  const cls=shiftClass(st);
+  // gom theo vị trí — CHỈ người xếp đúng ca này
   const byRole={}; DB.settings.positions.forEach(r=>byRole[r]=[]);
   DB.employees.forEach(e=>{
     cellShifts(mon,e.id,day).forEach((c,ci)=>{
-      const st=typeById(c.typeId);
-      if(st&&coveredPeriods(st).includes(p.key)){ (byRole[c.pos]=byRole[c.pos]||[]).push({e,c,st,ci}); }
+      if(c.typeId===st.id){ (byRole[c.pos]=byRole[c.pos]||[]).push({e,c,ci}); }
     });
   });
-  const req=DB.settings.req[p.key]||{};
+  const req=reqFor(st);
   const totalHave=Object.values(byRole).reduce((a,l)=>a+l.length,0);
   const totalNeed=Object.values(req).reduce((a,b)=>a+b,0);
-  const allOk=totalNeed&&totalHave>=totalNeed;
-  let h=`<div class="rblock card ${allOk?'':'lack'}"><div class="rhead"><span class="dot c-${p.cls}"></span>Ca ${p.name}<span class="time">${canon?canon.label:''}</span></div>`;
+  const allOk=!totalNeed||totalHave>=totalNeed;
+  let h=`<div class="rblock card ${allOk?'':'lack'}"><div class="rhead"><span class="dot c-${cls}"></span>${st.label}<span class="time">${fmtH(st.hours)}</span></div>`;
   DB.settings.positions.forEach(role=>{
     const list=byRole[role]||[];
     const need=req[role]||0;
@@ -762,16 +777,12 @@ function renderPeriodBlock(mon,day,p){
     h+=`<div class="rrow"><div class="rlabel">${role}${badge}</div><div class="rchips">`;
     if(editMode){
       list.forEach(x=>{
-        const nonCanon=canon&&x.c.typeId!==canon.id;
-        h+=`<button class="nchip ${x.c.bike?'bike':''}" data-act="chip" data-day="${day}" data-emp="${x.e.id}" data-ci="${x.ci}">${x.c.bike?'🛵 ':''}${esc(x.e.name)}${nonCanon?`<span class="tt">${x.st.label}</span>`:''}</button>`;
+        h+=`<button class="nchip ${x.c.bike?'bike':''}" data-act="chip" data-day="${day}" data-emp="${x.e.id}" data-ci="${x.ci}">${x.c.bike?'🛵 ':''}${esc(x.e.name)}</button>`;
       });
-      h+=`<button class="addp" data-act="add" data-day="${day}" data-pk="${p.key}" data-role="${esc(role)}" aria-label="Thêm">+</button>`;
+      h+=`<button class="addp" data-act="add" data-day="${day}" data-st="${st.id}" data-role="${esc(role)}" aria-label="Thêm">+</button>`;
     }else{
       if(list.length){
-        h+=`<div class="names">`+list.map(x=>{
-          const nonCanon=canon&&x.c.typeId!==canon.id;
-          return `<span class="nm2">${x.c.bike?'🛵 ':''}${esc(x.e.name)}${nonCanon?`<i>${x.st.label}</i>`:''}</span>`;
-        }).join('<span class="sep">·</span>')+`</div>`;
+        h+=`<div class="names">`+list.map(x=>`<span class="nm2">${x.c.bike?'🛵 ':''}${esc(x.e.name)}</span>`).join('<span class="sep">·</span>')+`</div>`;
       } else h+=`<span class="nobody">chưa có ai</span>`;
     }
     h+=`</div></div>`;
@@ -784,25 +795,25 @@ function bindRoster(){
     b.onclick=()=>{
       const a=b.dataset.act;
       if(a==='chip') openAssignSheet(+b.dataset.day,b.dataset.emp,+b.dataset.ci);
-      else if(a==='add') openAddSheet(+b.dataset.day,b.dataset.pk,b.dataset.role);
+      else if(a==='add') openAddSheet(+b.dataset.day,b.dataset.st,b.dataset.role);
     };
   });
 }
-/* --- thêm người vào 1 buổi + vị trí --- */
-function openAddSheet(day,pk,role){
-  const mon=curMonday; const canon=canonicalShiftFor(pk); const wk=weekKey(mon);
-  const p=PERIODS.find(x=>x.key===pk);
+/* --- thêm người vào 1 CA (khung giờ) + vị trí --- */
+function openAddSheet(day,stId,role){
+  const mon=curMonday; const st=typeById(stId); if(!st)return; const wk=weekKey(mon);
+  const pk=coveredPeriods(st)[0]; const p=PERIODS.find(x=>x.key===pk)||{name:st.label};
   const av=(DB.availability&&DB.availability[wk])||{};
-  const isFree=id=> av[id] && av[id][day] && av[id][day].includes(pk);
-  // ai chưa có ca phủ buổi này
-  let list=DB.employees.filter(e=>!cellShifts(mon,e.id,day).some(c=>{const t=typeById(c.typeId);return t&&coveredPeriods(t).includes(pk);}));
+  const isFree=id=> isFreeForShift(av,id,day,st);
+  // ai chưa có ca phủ buổi(s) mà ca này chiếm (tránh trùng giờ)
+  let list=DB.employees.filter(e=>!cellShifts(mon,e.id,day).some(c=>{const t=typeById(c.typeId);return t&&coveredPeriods(t).some(k=>coveredPeriods(st).includes(k));}));
   // xếp: đúng vị trí + đã đăng ký rảnh lên đầu
   list.sort((a,b)=>{
     const af=(isFree(a.id)?0:1)+(a.pos===role?0:2), bf=(isFree(b.id)?0:1)+(b.pos===role?0:2);
     return af-bf;
   });
-  let html=`<div class="grip"></div><h2>Thêm ${esc(role)} · Ca ${p.name}</h2><div class="sub">${DOW_FULL[(addDays(mon,day).getDay()+6)%7]}, ${dmShort(addDays(mon,day))} · ${canon?canon.label:''}</div>`;
-  if(!list.length) html+=`<div class="empty" style="padding:18px">Mọi nhân viên đều đã có ca buổi này.</div>`;
+  let html=`<div class="grip"></div><h2>Thêm ${esc(role)}</h2><div class="sub">${DOW_FULL[(addDays(mon,day).getDay()+6)%7]}, ${dmShort(addDays(mon,day))} · ca ${st.label}</div>`;
+  if(!list.length) html+=`<div class="empty" style="padding:18px">Mọi nhân viên đều đã có ca trùng giờ này.</div>`;
   else{ html+=`<div class="existing">`+list.map(e=>{
       const leave=onLeave(ymd(addDays(mon,day)),e.id); const free=isFree(e.id);
       // bối cảnh: hôm qua làm gì + tuần này mấy ca + có kẹt sáng/tối hôm nay không
@@ -820,7 +831,7 @@ function openAddSheet(day,pk,role){
   document.getElementById('sheet').innerHTML=html;
   document.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{
     const e=empById(b.dataset.pick); const arr=cellShifts(mon,e.id,day).slice();
-    arr.push({typeId:canon.id,pos:role});
+    arr.push({typeId:st.id,pos:role});
     setCell(mon,e.id,day,arr);
     closeSheet(); toast('Đã thêm '+e.name); renderWeek();
   });
@@ -914,14 +925,14 @@ function weekWarnings(mon){
   const w=[];
   for(let d=0;d<7;d++){
     const ds=ymd(addDays(mon,d));
-    PERIODS.forEach(p=>{
-      const req=DB.settings.req[p.key]||{};
-      const have=staffCount(mon,d,p.key);
+    DB.shiftTypes.forEach(st=>{
+      const req=reqFor(st);
+      const have=staffCount(mon,d,st.id);
       const total=Object.values(have).reduce((a,b)=>a+b,0);
       if(!total) return;
       Object.keys(req).forEach(role=>{
         const need=req[role], got=have[role]||0;
-        if(got<need) w.push(`<b>${DOW[d]}</b> ca ${p.name} thiếu ${role}: ${got}/${need}.`);
+        if(got<need) w.push(`<b>${DOW[d]}</b> ca ${st.label} thiếu ${role}: ${got}/${need}.`);
       });
     });
     DB.employees.forEach(e=>{ if(onLeave(ds,e.id)&&cellShifts(mon,e.id,d).length) w.push(`<b>${DOW[d]}</b>: ${e.name} xin nghỉ nhưng vẫn có ca.`); });
@@ -1164,8 +1175,10 @@ function runAutoSchedule(mon){
   const periodsToday=(id,d)=>{ const s=[]; (newWeek[id]&&newWeek[id][d]||[]).forEach(c=>coveredPeriods(typeById(c.typeId)).forEach(k=>{if(!s.includes(k))s.push(k);})); return s; };
   // hôm qua có làm đúng buổi này không (để không lặp cùng buổi 2 ngày liên tiếp)
   const sameBuoiYesterday=(id,d,pk)=> d>0 && (newWeek[id]&&newWeek[id][d-1]||[]).some(c=>coveredPeriods(typeById(c.typeId)).includes(pk));
-  // số người đã xếp cho 1 ô (ngày,buổi,vị trí)
-  const haveCount=(d,pk,role)=>{ let n=0; DB.employees.forEach(e=>{(newWeek[e.id]&&newWeek[e.id][d]||[]).forEach(c=>{ if(c.pos===role && coveredPeriods(typeById(c.typeId)).includes(pk)) n++; }); }); return n; };
+  // số người đã xếp cho 1 CA (ngày, khung giờ, vị trí)
+  const haveShift=(d,stId,role)=>{ let n=0; DB.employees.forEach(e=>{(newWeek[e.id]&&newWeek[e.id][d]||[]).forEach(c=>{ if(c.typeId===stId && c.pos===role) n++; }); }); return n; };
+  // đã có ca chiếm buổi mà ca `st` cần (tránh trùng giờ, VD 17h30 vs 19h)
+  const busyOverlap=(id,d,st)=> periodsToday(id,d).some(k=>coveredPeriods(st).includes(k));
   const doubled=[];   // ai bị xếp 2 buổi/ngày (để báo)
 
   function fillPass(relaxed){
@@ -1175,34 +1188,34 @@ function runAutoSchedule(mon){
     const cap =relaxed? 999 : maxS;
     for(let d=0; d<7; d++){
       const ds=ymd(addDays(mon,d));
-      PERIODS.forEach(p=>{
-        const req=DB.settings.req[p.key]||{};
+      DB.shiftTypes.forEach(st=>{
+        const pk=coveredPeriods(st)[0]; const req=reqFor(st);
         DB.settings.positions.forEach(role=>{
           const need=req[role]||0;
-          while(haveCount(d,p.key,role)<need){
-            const eligible=DB.employees.filter(e=> e.pos===role && !onLeave(ds,e.id) && isFree(e.id,d,p.key)
-              && !busyPeriod(e.id,d,p.key) && load[e.id]<cap);
+          while(haveShift(d,st.id,role)<need){
+            const eligible=DB.employees.filter(e=> e.pos===role && !onLeave(ds,e.id) && isFreeForShift(avail,e.id,d,st)
+              && !busyOverlap(e.id,d,st) && load[e.id]<cap);
             if(!eligible.length) break;
             const okDay=e=>{
               const pks=periodsToday(e.id,d);
               if(pks.length>=mday) return false;
-              if(p.key==='m'&&pks.includes('e')) return false;   // luôn cấm Sáng+Tối
-              if(p.key==='e'&&pks.includes('m')) return false;
-              if(!relaxed && noConsec && sameBuoiYesterday(e.id,d,p.key)) return false;
+              if(pk==='m'&&pks.includes('e')) return false;   // luôn cấm Sáng+Tối
+              if(pk==='e'&&pks.includes('m')) return false;
+              if(!relaxed && noConsec && sameBuoiYesterday(e.id,d,pk)) return false;
               return true;
             };
             const cands=eligible.filter(okDay);
             if(!cands.length) break;
             cands.sort((a,b)=>{
-              if(p.key==='e'){ const at=cnt[a.id].e<minToi?0:1, bt=cnt[b.id].e<minToi?0:1; if(at!==bt)return at-bt; }
+              if(pk==='e'){ const at=cnt[a.id].e<minToi?0:1, bt=cnt[b.id].e<minToi?0:1; if(at!==bt)return at-bt; }
               const am=load[a.id]<minS?0:1, bm=load[b.id]<minS?0:1; if(am!==bm)return am-bm;
               if(load[a.id]!==load[b.id]) return load[a.id]-load[b.id];
-              return cnt[a.id][p.key]-cnt[b.id][p.key];
+              return cnt[a.id][pk]-cnt[b.id][pk];
             });
-            const pick=cands[0]; const t=canonicalShiftFor(p.key);
+            const pick=cands[0];
             if(periodsToday(pick.id,d).length>=1) doubled.push({name:pick.name,day:d});
-            newWeek[pick.id]=newWeek[pick.id]||{}; (newWeek[pick.id][d]=newWeek[pick.id][d]||[]).push({typeId:t.id,pos:role});
-            load[pick.id]++; cnt[pick.id][p.key]++;
+            newWeek[pick.id]=newWeek[pick.id]||{}; (newWeek[pick.id][d]=newWeek[pick.id][d]||[]).push({typeId:st.id,pos:role});
+            load[pick.id]++; cnt[pick.id][pk]++;
           }
         });
       });
@@ -1210,16 +1223,16 @@ function runAutoSchedule(mon){
   }
   fillPass(false);                                   // vòng 1: công bằng, nhân đạo
   if(DB.settings.coverFirst!==false) fillPass(true); // vòng 2: phủ nốt chỗ trống (cho 2 buổi/ngày)
-  // tính chỗ còn trống
-  for(let d=0; d<7; d++) PERIODS.forEach(p=>DB.settings.positions.forEach(role=>{
-    const need=(DB.settings.req[p.key]||{})[role]||0; const have=haveCount(d,p.key,role);
-    if(have<need) gaps.push({day:d,pk:p.key,role,filled:have,need});
+  // tính chỗ còn trống (theo từng CA)
+  for(let d=0; d<7; d++) DB.shiftTypes.forEach(st=>DB.settings.positions.forEach(role=>{
+    const need=reqFor(st)[role]||0; const have=haveShift(d,st.id,role);
+    if(have<need) gaps.push({day:d,pk:coveredPeriods(st)[0],role,filled:have,need,label:st.label});
   }));
   DB.schedule[wk]=newWeek; save();
   const under=DB.employees.filter(e=>minS>0 && load[e.id]<minS).map(e=>({name:e.name,got:load[e.id]}));
   // chẩn đoán vì sao chưa đủ ca tối: do ít đăng ký rảnh tối, hay do hết suất?
   const roleCount={}; DB.employees.forEach(e=>roleCount[e.pos]=(roleCount[e.pos]||0)+1);
-  const toiCap={}; DB.settings.positions.forEach(r=>toiCap[r]=((DB.settings.req.e||{})[r]||0)*7);
+  const toiCap={}; DB.settings.positions.forEach(r=>{ let sum=0; DB.shiftTypes.forEach(st=>{ if(coveredPeriods(st).includes('e')) sum+=(reqFor(st)[r]||0); }); toiCap[r]=sum*7; });
   const underToi=DB.employees.filter(e=>minToi>0 && load[e.id]>0 && cnt[e.id].e<minToi).map(e=>{
     let availToi=0; for(let d=0;d<7;d++) if(avail[e.id]&&avail[e.id][d]&&avail[e.id][d].includes('e')) availToi++;
     const capShort=(toiCap[e.pos]||0) < minToi*(roleCount[e.pos]||0);
@@ -1243,7 +1256,7 @@ function showScheduleResult(res){
   const {created=[],gaps=[],under=[],underToi=[],doubles=[],minS=0,minToi=0}=res; const mon=curMonday;
   let html=`<div class="grip"></div><h2>✅ Đã tự xếp ca</h2><div class="sub">Tuần ${dmShort(mon)} – ${dmShort(addDays(mon,6))} · đã chia cân bằng</div>`;
   if(created.length) html+=`<div class="warnbox" style="background:#E7F3EC;border-color:#BEE0CB"><h3 style="color:#1f7a4d">Đã thêm ${created.length} nhân viên mới</h3><ul>${created.map(n=>`<li style="color:#256b45">${esc(n)} — nhớ đặt lương/giờ ở tab Nhân viên</li>`).join('')}</ul></div>`;
-  if(gaps.length) html+=`<div class="warnbox"><h3>⚠️ Thiếu người (không đủ người rảnh)</h3><ul>${gaps.map(g=>`<li><b>${DOW[g.day]}</b> ca ${pkName(g.pk)} · ${g.role}: ${g.filled}/${g.need}</li>`).join('')}</ul><p style="font-size:12.5px;margin:6px 0 0;color:#7d2622">Vào ngày đó bấm "+ Thêm" để xếp bù.</p></div>`;
+  if(gaps.length) html+=`<div class="warnbox"><h3>⚠️ Thiếu người (không đủ người rảnh)</h3><ul>${gaps.map(g=>`<li><b>${DOW[g.day]}</b> ca ${g.label||pkName(g.pk)} · ${g.role}: ${g.filled}/${g.need}</li>`).join('')}</ul><p style="font-size:12.5px;margin:6px 0 0;color:#7d2622">Vào ngày đó bấm "+ Thêm" để xếp bù.</p></div>`;
   if(under.length) html+=`<div class="warnbox" style="background:#FFF4E0;border-color:#F0D9A8"><h3 style="color:#9a6a10">Chưa đủ ${minS} ca tối thiểu</h3><ul>${under.map(u=>`<li style="color:#7a5410">${esc(u.name)}: ${u.got}/${minS} ca (do rảnh ít hoặc ca đã đầy)</li>`).join('')}</ul></div>`;
   if(underToi.length){
     const capRoles=[...new Set(underToi.filter(u=>u.why==='cap').map(u=>u.role))];
@@ -1509,9 +1522,9 @@ function renderSettings(){
 
     <div class="sec-title">Định mức người mỗi ca</div>
     <div class="card pad">
-      <p class="muted" style="margin:0 0 12px;font-size:13px">Số người cần cho mỗi buổi theo từng vị trí. Dùng để cảnh báo thiếu người và chia chỗ khi nhập đăng ký.</p>
+      <p class="muted" style="margin:0 0 12px;font-size:13px">Số người cần cho <b>từng ca (khung giờ)</b> theo vị trí. Dùng để cảnh báo thiếu và tự xếp.</p>
       <table class="req-tbl"><thead><tr><th></th>${DB.settings.positions.map(p=>`<th>${esc(p)}</th>`).join('')}</tr></thead><tbody>
-      ${PERIODS.map(p=>`<tr><td class="rq-per"><span class="dot c-${p.cls}"></span>${p.name}</td>${DB.settings.positions.map(role=>`<td><input class="rq-in" inputmode="numeric" data-pk="${p.key}" data-role="${esc(role)}" value="${(DB.settings.req[p.key]||{})[role]||0}"></td>`).join('')}</tr>`).join('')}
+      ${DB.shiftTypes.map(st=>`<tr><td class="rq-per"><span class="dot c-${shiftClass(st)}"></span>${st.label}</td>${DB.settings.positions.map(role=>`<td><input class="rq-in" inputmode="numeric" data-st="${st.id}" data-role="${esc(role)}" value="${(DB.settings.req[st.id]||{})[role]||0}"></td>`).join('')}</tr>`).join('')}
       </tbody></table>
       <div class="row between" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
         <div><b style="font-size:14px">Số ca / người / tuần</b><div class="muted" style="font-size:12px">Mỗi bạn làm từ … đến … ca mỗi tuần</div></div>
@@ -1572,9 +1585,9 @@ function renderSettings(){
   document.getElementById('setBranch').onchange=ev=>{DB.settings.branch=ev.target.value.trim()||'Cơ sở 3';save();render();};
   document.getElementById('setSheet').onchange=ev=>{DB.settings.sheetUrl=ev.target.value.trim();save();};
   document.querySelectorAll('.rq-in').forEach(inp=>inp.onchange=ev=>{
-    const pk=ev.target.dataset.pk, role=ev.target.dataset.role;
-    DB.settings.req[pk]=DB.settings.req[pk]||{};
-    DB.settings.req[pk][role]=Math.max(0,parseInt(ev.target.value)||0);
+    const st=ev.target.dataset.st, role=ev.target.dataset.role;
+    DB.settings.req[st]=DB.settings.req[st]||{};
+    DB.settings.req[st][role]=Math.max(0,parseInt(ev.target.value)||0);
     save();
   });
   document.getElementById('setMinShifts').onchange=ev=>{DB.settings.minShifts=Math.max(0,parseInt(ev.target.value)||0);save();};
