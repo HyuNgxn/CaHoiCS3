@@ -355,14 +355,15 @@ function defaultData(){
       maxShifts:5,                        // số ca tối đa mỗi người/tuần (0 = không giới hạn)
       minToi:1,                           // số ca TỐI tối thiểu mỗi người/tuần (0 = tắt)
       noSameConsec:true,                  // không làm cùng 1 buổi ở 2 ngày liên tiếp
-      maxPerDay:1,                        // tối đa số buổi 1 người/ngày (vòng 1)
-      coverFirst:true,                    // ưu tiên phủ đủ ca: vòng 2 cho làm 2 buổi/ngày khi thiếu người
+      maxPerDay:1,                        // tối đa số buổi 1 người/ngày
+      coverFirst:false,                   // KHÔNG cho làm 2 ca/ngày (đủ người thì không cần)
+      _cfg2:true,                         // đánh dấu đã áp cấu hình đợt 2
       positions:['Pha chế','Phục vụ'],   // Giữ xe là 1 phục vụ được đánh dấu (flag bike)
       // định mức người mỗi CA (theo khung giờ) × vị trí — keyed theo shiftType.id
       req:{
         s1:{'Pha chế':2,'Phục vụ':3},
         s2:{'Pha chế':2,'Phục vụ':2},
-        s3:{'Pha chế':2,'Phục vụ':3},
+        s3:{'Pha chế':1,'Phục vụ':3},
         s4:{'Pha chế':1,'Phục vụ':2}
       }
     },
@@ -420,6 +421,14 @@ function migrate(r){
       nu[st.id] = (canon && canon.id===st.id) ? Object.assign({}, old[coveredPeriods(st)[0]]||{}) : {};
     });
     r.settings.req=nu;
+  }
+  // cấu hình đợt 2 (áp 1 lần): tắt xếp 2 ca/ngày + định mức 2 ca tối
+  if(!r.settings._cfg2){
+    r.settings.coverFirst=false;
+    r.settings.req=r.settings.req||{};
+    const setReq=(label,pc,pv)=>{ const st=(r.shiftTypes||[]).find(s=>s.label===label); if(st){ r.settings.req[st.id]=Object.assign({}, r.settings.req[st.id], {'Pha chế':pc,'Phục vụ':pv}); } };
+    setReq('17h30-00h',1,3); setReq('19h-00h',1,2);
+    r.settings._cfg2=true;
   }
   r.employees=r.employees||[];
   r.schedule=r.schedule||{};
