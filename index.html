@@ -355,7 +355,8 @@ function defaultData(){
       maxShifts:5,                        // số ca tối đa mỗi người/tuần (0 = không giới hạn)
       minToi:1,                           // số ca TỐI tối thiểu mỗi người/tuần (0 = tắt)
       noSameConsec:true,                  // không làm cùng 1 buổi ở 2 ngày liên tiếp
-      maxPerDay:1,                        // tối đa số buổi 1 người/ngày
+      maxPerDay:1,                        // tối đa số buổi 1 người/ngày (vòng 1)
+      coverFirst:true,                    // ưu tiên phủ đủ ca: vòng 2 cho làm 2 buổi/ngày khi thiếu người
       positions:['Pha chế','Phục vụ'],   // Giữ xe là 1 phục vụ được đánh dấu (flag bike)
       // định mức người mỗi ca (period) theo từng vị trí
       req:{
@@ -398,6 +399,7 @@ function migrate(r){
   if(r.settings.minToi==null) r.settings.minToi=d.settings.minToi;
   if(r.settings.noSameConsec==null) r.settings.noSameConsec=d.settings.noSameConsec;
   if(r.settings.maxPerDay==null) r.settings.maxPerDay=d.settings.maxPerDay;
+  if(r.settings.coverFirst==null) r.settings.coverFirst=d.settings.coverFirst;
   delete r.settings.maxSameBuoi;   // thay bằng luật "không cùng buổi 2 ngày liên tiếp"
   // Giữ xe không còn là vị trí -> chuyển thành Phục vụ + flag giữ xe
   if(r.settings.positions.includes('Giữ xe')){
@@ -1162,44 +1164,57 @@ function runAutoSchedule(mon){
   const periodsToday=(id,d)=>{ const s=[]; (newWeek[id]&&newWeek[id][d]||[]).forEach(c=>coveredPeriods(typeById(c.typeId)).forEach(k=>{if(!s.includes(k))s.push(k);})); return s; };
   // hôm qua có làm đúng buổi này không (để không lặp cùng buổi 2 ngày liên tiếp)
   const sameBuoiYesterday=(id,d,pk)=> d>0 && (newWeek[id]&&newWeek[id][d-1]||[]).some(c=>coveredPeriods(typeById(c.typeId)).includes(pk));
-  for(let d=0; d<7; d++){
-    const ds=ymd(addDays(mon,d));
-    PERIODS.forEach(p=>{
-      const req=DB.settings.req[p.key]||{};
-      DB.settings.positions.forEach(role=>{
-        const need=req[role]||0; let filled=0;
-        for(let k=0;k<need;k++){
-          const eligible=DB.employees.filter(e=> e.pos===role && !onLeave(ds,e.id) && isFree(e.id,d,p.key)
-            && !busyPeriod(e.id,d,p.key) && load[e.id]<maxS);           // trần số ca/tuần
-          if(!eligible.length) break;
-          // LUẬT CỨNG: không quá maxPerDay buổi/ngày · không ghép Sáng+Tối cùng ngày ·
-          // không lặp cùng 1 buổi ở 2 ngày liên tiếp. Thiếu người thì để TRỐNG + báo.
-          const okDay=e=>{
-            const pks=periodsToday(e.id,d);
-            if(pks.length>=maxDay) return false;
-            if(p.key==='m'&&pks.includes('e')) return false;
-            if(p.key==='e'&&pks.includes('m')) return false;
-            if(noConsec && sameBuoiYesterday(e.id,d,p.key)) return false;
-            return true;
-          };
-          const cands=eligible.filter(okDay);
-          if(!cands.length) break;
-          // ưu tiên: (ca tối) ai chưa đủ ca tối -> ai chưa đủ ca tối thiểu ->
-          // ai ít ca nhất -> ai ít làm buổi này nhất (cho xoay vòng đều)
-          cands.sort((a,b)=>{
-            if(p.key==='e'){ const at=cnt[a.id].e<minToi?0:1, bt=cnt[b.id].e<minToi?0:1; if(at!==bt)return at-bt; }
-            const am=load[a.id]<minS?0:1, bm=load[b.id]<minS?0:1; if(am!==bm)return am-bm;
-            if(load[a.id]!==load[b.id]) return load[a.id]-load[b.id];
-            return cnt[a.id][p.key]-cnt[b.id][p.key];
-          });
-          const pick=cands[0]; const t=canonicalShiftFor(p.key);
-          newWeek[pick.id]=newWeek[pick.id]||{}; (newWeek[pick.id][d]=newWeek[pick.id][d]||[]).push({typeId:t.id,pos:role});
-          load[pick.id]++; cnt[pick.id][p.key]++; filled++;
-        }
-        if(filled<need) gaps.push({day:d,pk:p.key,role,filled,need});
+  // số người đã xếp cho 1 ô (ngày,buổi,vị trí)
+  const haveCount=(d,pk,role)=>{ let n=0; DB.employees.forEach(e=>{(newWeek[e.id]&&newWeek[e.id][d]||[]).forEach(c=>{ if(c.pos===role && coveredPeriods(typeById(c.typeId)).includes(pk)) n++; }); }); return n; };
+  const doubled=[];   // ai bị xếp 2 buổi/ngày (để báo)
+
+  function fillPass(relaxed){
+    // relaxed = pass phủ ca: bỏ trần tuần + cho 2 buổi/ngày + bỏ luật lặp buổi.
+    // Luôn giữ: cấm ghép Sáng+Tối (7h→00h).
+    const mday=relaxed? Math.max(2,maxDay) : maxDay;
+    const cap =relaxed? 999 : maxS;
+    for(let d=0; d<7; d++){
+      const ds=ymd(addDays(mon,d));
+      PERIODS.forEach(p=>{
+        const req=DB.settings.req[p.key]||{};
+        DB.settings.positions.forEach(role=>{
+          const need=req[role]||0;
+          while(haveCount(d,p.key,role)<need){
+            const eligible=DB.employees.filter(e=> e.pos===role && !onLeave(ds,e.id) && isFree(e.id,d,p.key)
+              && !busyPeriod(e.id,d,p.key) && load[e.id]<cap);
+            if(!eligible.length) break;
+            const okDay=e=>{
+              const pks=periodsToday(e.id,d);
+              if(pks.length>=mday) return false;
+              if(p.key==='m'&&pks.includes('e')) return false;   // luôn cấm Sáng+Tối
+              if(p.key==='e'&&pks.includes('m')) return false;
+              if(!relaxed && noConsec && sameBuoiYesterday(e.id,d,p.key)) return false;
+              return true;
+            };
+            const cands=eligible.filter(okDay);
+            if(!cands.length) break;
+            cands.sort((a,b)=>{
+              if(p.key==='e'){ const at=cnt[a.id].e<minToi?0:1, bt=cnt[b.id].e<minToi?0:1; if(at!==bt)return at-bt; }
+              const am=load[a.id]<minS?0:1, bm=load[b.id]<minS?0:1; if(am!==bm)return am-bm;
+              if(load[a.id]!==load[b.id]) return load[a.id]-load[b.id];
+              return cnt[a.id][p.key]-cnt[b.id][p.key];
+            });
+            const pick=cands[0]; const t=canonicalShiftFor(p.key);
+            if(periodsToday(pick.id,d).length>=1) doubled.push({name:pick.name,day:d});
+            newWeek[pick.id]=newWeek[pick.id]||{}; (newWeek[pick.id][d]=newWeek[pick.id][d]||[]).push({typeId:t.id,pos:role});
+            load[pick.id]++; cnt[pick.id][p.key]++;
+          }
+        });
       });
-    });
+    }
   }
+  fillPass(false);                                   // vòng 1: công bằng, nhân đạo
+  if(DB.settings.coverFirst!==false) fillPass(true); // vòng 2: phủ nốt chỗ trống (cho 2 buổi/ngày)
+  // tính chỗ còn trống
+  for(let d=0; d<7; d++) PERIODS.forEach(p=>DB.settings.positions.forEach(role=>{
+    const need=(DB.settings.req[p.key]||{})[role]||0; const have=haveCount(d,p.key,role);
+    if(have<need) gaps.push({day:d,pk:p.key,role,filled:have,need});
+  }));
   DB.schedule[wk]=newWeek; save();
   const under=DB.employees.filter(e=>minS>0 && load[e.id]<minS).map(e=>({name:e.name,got:load[e.id]}));
   // chẩn đoán vì sao chưa đủ ca tối: do ít đăng ký rảnh tối, hay do hết suất?
@@ -1212,7 +1227,10 @@ function runAutoSchedule(mon){
             why: availToi<minToi ? 'avail' : (capShort?'cap':'other'),
             cap:toiCap[e.pos]||0, nRole:roleCount[e.pos]||0};
   });
-  return {gaps, under, underToi, load, minS, minToi};
+  // gộp danh sách người bị xếp 2 buổi/ngày
+  const dblMap={}; doubled.forEach(x=>{ (dblMap[x.name]=dblMap[x.name]||[]).push(DOW[x.day]); });
+  const doubles=Object.keys(dblMap).map(n=>({name:n,days:[...new Set(dblMap[n])]}));
+  return {gaps, under, underToi, doubles, load, minS, minToi};
 }
 function autoScheduleBtn(){
   const mon=curMonday, wk=weekKey(mon);
@@ -1222,7 +1240,7 @@ function autoScheduleBtn(){
 }
 function pkName(pk){return PERIODS.find(p=>p.key===pk).name;}
 function showScheduleResult(res){
-  const {created=[],gaps=[],under=[],underToi=[],minS=0,minToi=0}=res; const mon=curMonday;
+  const {created=[],gaps=[],under=[],underToi=[],doubles=[],minS=0,minToi=0}=res; const mon=curMonday;
   let html=`<div class="grip"></div><h2>✅ Đã tự xếp ca</h2><div class="sub">Tuần ${dmShort(mon)} – ${dmShort(addDays(mon,6))} · đã chia cân bằng</div>`;
   if(created.length) html+=`<div class="warnbox" style="background:#E7F3EC;border-color:#BEE0CB"><h3 style="color:#1f7a4d">Đã thêm ${created.length} nhân viên mới</h3><ul>${created.map(n=>`<li style="color:#256b45">${esc(n)} — nhớ đặt lương/giờ ở tab Nhân viên</li>`).join('')}</ul></div>`;
   if(gaps.length) html+=`<div class="warnbox"><h3>⚠️ Thiếu người (không đủ người rảnh)</h3><ul>${gaps.map(g=>`<li><b>${DOW[g.day]}</b> ca ${pkName(g.pk)} · ${g.role}: ${g.filled}/${g.need}</li>`).join('')}</ul><p style="font-size:12.5px;margin:6px 0 0;color:#7d2622">Vào ngày đó bấm "+ Thêm" để xếp bù.</p></div>`;
@@ -1236,7 +1254,8 @@ function showScheduleResult(res){
       return `<li style="color:#4b3a8a"><b>${esc(u.name)}</b>: ${u.got}/${minToi} ca tối — ${why}</li>`;
     }).join('')}</ul>${capRoles.length?`<p style="font-size:12.5px;margin:8px 0 0;color:#4b3a8a">💡 Không thể ai cũng đủ ${minToi} ca tối: số ${capRoles.join('/')} đang nhiều hơn số suất tối. Hạ "Số ca tối tối thiểu" xuống, hoặc tăng định mức ca Tối, hoặc chấp nhận vài bạn ít ca tối hơn.</p>`:''}</div>`;
   }
-  if(!gaps.length&&!under.length&&!underToi.length) html+=`<div class="empty" style="padding:20px"><div class="big">🎉</div>Đủ người mọi ca, chia cân bằng!</div>`;
+  if(doubles.length) html+=`<div class="warnbox" style="background:#E7F1FB;border-color:#C4DBF0"><h3 style="color:#2b5f8a">Làm 2 buổi/ngày (để phủ đủ ca)</h3><ul>${doubles.map(x=>`<li style="color:#274e6e"><b>${esc(x.name)}</b> · ${x.days.join(', ')}</li>`).join('')}</ul><p style="font-size:12.5px;margin:6px 0 0;color:#274e6e">Do vị trí này thiếu người. Không có ca Sáng+Tối kiểu 7h→nửa đêm — chỉ ghép liền mạch.</p></div>`;
+  if(!gaps.length&&!under.length&&!underToi.length&&!doubles.length) html+=`<div class="empty" style="padding:20px"><div class="big">🎉</div>Đủ người mọi ca, chia cân bằng!</div>`;
   html+=`<button class="btn wide" id="okImport" style="margin-top:12px">Xem lịch tuần</button>`;
   document.getElementById('sheet').innerHTML=html;
   document.getElementById('okImport').onclick=closeSheet;
@@ -1514,6 +1533,10 @@ function renderSettings(){
         <div><b style="font-size:14px">Tối đa buổi / người / ngày</b><div class="muted" style="font-size:12px">Để <b>1</b> nếu mỗi ngày chỉ làm 1 buổi. App luôn cấm ghép Sáng+Tối cùng ngày.</div></div>
         <input id="setMaxDay" inputmode="numeric" value="${DB.settings.maxPerDay||2}" style="width:64px;height:44px;text-align:center;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);font-weight:700;font-size:16px">
       </div>
+      <div class="row between" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+        <div style="flex:1"><b style="font-size:14px">Ưu tiên phủ đủ ca</b><div class="muted" style="font-size:12px">Khi vị trí thiếu người, cho làm 2 buổi/ngày (liền mạch) để không trống ca</div></div>
+        <button id="setCoverFirst" class="tgl ${DB.settings.coverFirst!==false?'on':''}"><span></span></button>
+      </div>
     </div>
 
     <div class="sec-title">Khung giờ ca &amp; số giờ</div>
@@ -1559,6 +1582,7 @@ function renderSettings(){
   document.getElementById('setMinToi').onchange=ev=>{DB.settings.minToi=Math.max(0,parseInt(ev.target.value)||0);save();};
   document.getElementById('setNoConsec').onclick=ev=>{DB.settings.noSameConsec=!DB.settings.noSameConsec;save();renderSettings();};
   document.getElementById('setMaxDay').onchange=ev=>{DB.settings.maxPerDay=Math.min(3,Math.max(1,parseInt(ev.target.value)||2));save();};
+  document.getElementById('setCoverFirst').onclick=()=>{DB.settings.coverFirst=!(DB.settings.coverFirst!==false);save();renderSettings();};
   document.getElementById('setPos').onchange=ev=>{const arr=ev.target.value.split(',').map(s=>s.trim()).filter(Boolean);if(arr.length){DB.settings.positions=arr;save();render();}};
   document.querySelectorAll('[data-editshift]').forEach(b=>b.onclick=()=>openShiftTypeSheet(b.dataset.editshift));
   document.getElementById('addShiftType').onclick=()=>openShiftTypeSheet();
