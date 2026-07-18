@@ -350,14 +350,14 @@ function defaultData(){
   return {
     settings:{
       branch:'Cơ sở 3',
-      sheetUrl:'https://docs.google.com/spreadsheets/d/14kMj5VarO4H-QuYbG1Sj95gCDQU3J8S5QskKl8XBZEg/edit?gid=1443153493',
+      sheetUrl:'https://docs.google.com/spreadsheets/d/1W1rpyFg-EuqydUXWseM0lBhududLmSrJ_tgY8gAjeto/edit?gid=0',
       minShifts:4,                        // số ca tối thiểu mỗi người/tuần (0 = tắt)
-      maxShifts:5,                        // số ca tối đa mỗi người/tuần (0 = không giới hạn)
+      maxShifts:6,                        // số ca tối đa mỗi người/tuần (0 = không giới hạn)
       minToi:1,                           // số ca TỐI tối thiểu mỗi người/tuần (0 = tắt)
       noSameConsec:true,                  // không làm cùng 1 buổi ở 2 ngày liên tiếp
       maxPerDay:1,                        // tối đa số buổi 1 người/ngày
       coverFirst:false,                   // KHÔNG cho làm 2 ca/ngày (đủ người thì không cần)
-      _cfg2:true,                         // đánh dấu đã áp cấu hình đợt 2
+      _cfg2:true, _cfg3:true,             // đánh dấu đã áp các cấu hình
       positions:['Pha chế','Phục vụ'],   // Giữ xe là 1 phục vụ được đánh dấu (flag bike)
       // định mức người mỗi CA (theo khung giờ) × vị trí — keyed theo shiftType.id
       req:{
@@ -394,8 +394,9 @@ function migrate(r){
   if(!r.settings.positions||!r.settings.positions.length) r.settings.positions=d.settings.positions;
   if(!r.settings.req) r.settings.req=d.settings.req;
   if(r.settings.sheetUrl==null) r.settings.sheetUrl='';
-  // đổi link sheet cũ -> sheet mới (Cơ sở 3, bản availability)
-  if(r.settings.sheetUrl.includes('1ZWwDEWoZyhM9c6yfVPTTnHj5649NDkrtp1yrVUy-fDA')) r.settings.sheetUrl=d.settings.sheetUrl;
+  // đổi link sheet cũ -> sheet mới nhất
+  if(r.settings.sheetUrl.includes('1ZWwDEWoZyhM9c6yfVPTTnHj5649NDkrtp1yrVUy-fDA')
+    || r.settings.sheetUrl.includes('14kMj5VarO4H-QuYbG1Sj95gCDQU3J8S5QskKl8XBZEg')) r.settings.sheetUrl=d.settings.sheetUrl;
   if(r.settings.minShifts==null) r.settings.minShifts=d.settings.minShifts;
   if(r.settings.maxShifts==null) r.settings.maxShifts=d.settings.maxShifts;
   if(r.settings.minToi==null) r.settings.minToi=d.settings.minToi;
@@ -430,6 +431,8 @@ function migrate(r){
     setReq('17h30-00h',1,3); setReq('19h-00h',1,2);
     r.settings._cfg2=true;
   }
+  // cấu hình đợt 3 (áp 1 lần): trần 6 ca/tuần cho đủ pha chế
+  if(!r.settings._cfg3){ r.settings.maxShifts=6; r.settings._cfg3=true; }
   r.employees=r.employees||[];
   r.schedule=r.schedule||{};
   r.leaves=r.leaves||[];
