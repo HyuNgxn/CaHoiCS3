@@ -1,6 +1,7 @@
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
-<meta name="theme-color" content="#8C2018">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#8C2018" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#17120F" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Cá Hồi">
@@ -18,6 +19,63 @@
     --radius:16px;
     --safe-b:env(safe-area-inset-bottom,0px);
     --safe-t:env(safe-area-inset-top,0px);
+    /* nút thương hiệu: nền + chữ trên nền đó */
+    --brand-fill:#8C2018; --on-brand:#fff;
+    --hero-1:#A82A1E; --hero-2:#6B1610;
+    --header-bg-1:rgba(244,236,225,.98); --header-bg-2:rgba(244,236,225,.86);
+    --tabs-bg:rgba(255,253,249,.92);
+    --raise:#fff;                     /* nền nổi trên surface-2 (seg đang chọn, mic…) */
+    --seg-on-ink:#8C2018;             /* chữ của segment đang chọn */
+    --focus-bg:#fff; --cell-today:#FFFDF4; --brand-line:#E7C9B2;
+    --toast-bg:#2B1C19; --toast-ink:#fff;
+    /* chip buổi */
+    --bg-m:#FBEBD3; --tx-m:#8a5410; --bg-a:#D8F0EC; --tx-a:#186b60;
+    --bg-e:#E9E2FA; --tx-e:#4b34a0; --bg-f:#F6DFD3; --tx-f:#8f3a17;
+    --bg-o:#ECE6DE; --tx-o:#7a6d5f;
+    --pl-m:#a9660f; --pl-a:#0f7a6c; --pl-e:#5a3fb8;
+    /* giữ xe (🛵) */
+    --bike-bg:#FFF1D9; --bike-line:#F0D9A8; --bike-ink:#8a5410;
+    /* hộp thông báo */
+    --wb-ok-bg:#E7F3EC; --wb-ok-line:#BEE0CB; --wb-ok-h:#1f7a4d; --wb-ok-tx:#256b45;
+    --wb-am-bg:#FFF4E0; --wb-am-line:#F0D9A8; --wb-am-h:#9a6a10; --wb-am-tx:#7a5410;
+    --wb-pu-bg:#EFEAFB; --wb-pu-line:#D6CBF3; --wb-pu-h:#5b45a8; --wb-pu-tx:#4b3a8a;
+    --wb-bl-bg:#E7F1FB; --wb-bl-line:#C4DBF0; --wb-bl-h:#2b5f8a; --wb-bl-tx:#274e6e;
+    --wb-rd-line:#F0C4C0; --wb-rd-tx:#7d2622;
+    color-scheme:light;
+  }
+  /* ---------- Dark mode: theo hệ màu iOS (iPhone bật Dark là app tự đổi) ---------- */
+  @media (prefers-color-scheme: dark){
+    :root{
+      /* iOS system backgrounds/labels */
+      --bg:#000000; --surface:#1C1C1E; --surface-2:#2C2C2E;
+      --ink:#FFFFFF; --muted:#98989F; --line:#38383A;
+      /* accent sáng lên cho nền tối; nền nút vẫn đủ đậm để chữ trắng đọc rõ */
+      --brand:#FF7A6B; --brand-ink:#FFB3A8; --brand-soft:#3A2320;
+      --brand-fill:#C4322A; --on-brand:#fff;
+      --hero-1:#8E241A; --hero-2:#4A0F0B;
+      --header-bg-1:rgba(0,0,0,.92); --header-bg-2:rgba(0,0,0,.72);
+      --tabs-bg:rgba(28,28,30,.94);
+      --raise:#48484A;
+      --seg-on-ink:#fff;              /* iOS: nhãn segment đang chọn màu trắng */
+      --toast-bg:#3A3A3C; --toast-ink:#fff;
+      /* iOS system colors (dark variants) */
+      --m:#FF9F0A; --a:#40C8B8; --e:#BF5AF2; --full:#FF6B3D; --off:#8E8E93;
+      --danger:#FF6961; --danger-soft:#3A1F1E; --ok:#30D158;
+      --shadow:0 1px 2px rgba(0,0,0,.5),0 6px 20px rgba(0,0,0,.6);
+      --bg-m:#3D2A0A; --tx-m:#FFB84D; --bg-a:#0B3330; --tx-a:#5DD6C6;
+      --bg-e:#2E1D45; --tx-e:#CE8BF7; --bg-f:#3D1F12; --tx-f:#FF9E7A;
+      --bg-o:#2C2C2E; --tx-o:#AEAEB2;
+      --pl-m:#FFB84D; --pl-a:#5DD6C6; --pl-e:#CE8BF7;
+      --bike-bg:#3D2E0A; --bike-line:#5A4410; --bike-ink:#FFD873;
+      --wb-ok-bg:#0D2C1A; --wb-ok-line:#1C5233; --wb-ok-h:#4FD97C; --wb-ok-tx:#8FE6AC;
+      --wb-am-bg:#332507; --wb-am-line:#5A4410; --wb-am-h:#FFC65C; --wb-am-tx:#FFD98F;
+      --wb-pu-bg:#241B3D; --wb-pu-line:#3F3168; --wb-pu-h:#C79BF5; --wb-pu-tx:#D9BCFA;
+      --wb-bl-bg:#0D2338; --wb-bl-line:#1E4467; --wb-bl-h:#6FB8F0; --wb-bl-tx:#A3D3F7;
+      --wb-rd-line:#5C2A26; --wb-rd-tx:#FFA9A3;
+      --focus-bg:#1C1C1E; --cell-today:#2C2C2E; --brand-line:#5C3A34;
+      color-scheme:dark;
+    }
+    /* ảnh xuất gửi Zalo vẫn vẽ nền sáng (canvas) để ai xem cũng rõ */
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%}
@@ -37,7 +95,7 @@
   header.top{
     position:sticky;top:0;z-index:30;
     padding:calc(var(--safe-t) + 12px) 16px 12px;
-    background:linear-gradient(180deg,rgba(244,236,225,.98),rgba(244,236,225,.86));
+    background:linear-gradient(180deg,var(--header-bg-1),var(--header-bg-2));
     backdrop-filter:saturate(1.4) blur(10px);
     display:flex;align-items:center;gap:12px;
   }
@@ -61,7 +119,7 @@
     position:fixed;left:0;right:0;bottom:0;z-index:40;
     display:flex;max-width:640px;margin:0 auto;
     padding:6px 6px calc(var(--safe-b) + 6px);
-    background:rgba(255,253,249,.92);backdrop-filter:blur(14px) saturate(1.3);
+    background:var(--tabs-bg);backdrop-filter:blur(14px) saturate(1.3);
     border-top:1px solid var(--line);
   }
   nav.tabs button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px;color:var(--muted);border-radius:12px}
@@ -81,7 +139,7 @@
   .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12.5px;font-weight:600}
   .empty{text-align:center;color:var(--muted);padding:34px 18px}
   .empty .big{font-size:34px;margin-bottom:8px}
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 18px;border-radius:14px;font-weight:700;background:var(--brand);color:#fff;box-shadow:var(--shadow)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 18px;border-radius:14px;font-weight:700;background:var(--brand-fill);color:var(--on-brand);box-shadow:var(--shadow)}
   .btn:active{transform:scale(.98)}
   .btn.ghost{background:var(--surface);color:var(--brand);border:1px solid var(--line);box-shadow:none}
   .btn.wide{width:100%}
@@ -91,13 +149,13 @@
   .field{margin-bottom:12px}
   .field label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:0 2px 6px}
   .field input,.field select{width:100%;height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink)}
-  .field input:focus,.field select:focus{outline:none;border-color:var(--brand);background:#fff}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--brand);background:var(--focus-bg)}
   .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
   /* period color chips */
   .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
   .c-m{background:var(--m)} .c-a{background:var(--a)} .c-e{background:var(--e)} .c-full{background:var(--full)} .c-off{background:var(--off)}
-  .bg-m{background:#FBEBD3;color:#8a5410} .bg-a{background:#D8F0EC;color:#186b60} .bg-e{background:#E9E2FA;color:#4b34a0} .bg-full{background:#F6DFD3;color:#8f3a17} .bg-off{background:#ECE6DE;color:#7a6d5f}
+  .bg-m{background:var(--bg-m);color:var(--tx-m)} .bg-a{background:var(--bg-a);color:var(--tx-a)} .bg-e{background:var(--bg-e);color:var(--tx-e)} .bg-full{background:var(--bg-f);color:var(--tx-f)} .bg-off{background:var(--bg-o);color:var(--tx-o)}
 
   /* ---------- Week grid ---------- */
   .week-toolbar{display:flex;align-items:center;gap:8px;margin:4px 0 12px}
@@ -127,7 +185,7 @@
   .name-col .hrs{font-size:11.5px;color:var(--muted);margin-top:2px}
   td.cell{padding:5px;min-width:96px;height:56px;background:var(--surface)}
   td.cell:active{background:var(--surface-2)}
-  td.cell.today{background:#FFFDF4}
+  td.cell.today{background:var(--cell-today)}
   .chip{
     display:block;border-radius:9px;padding:5px 7px;margin-bottom:4px;font-size:12px;font-weight:700;line-height:1.15;text-align:left;position:relative
   }
@@ -142,13 +200,29 @@
   .legend{display:flex;flex-wrap:wrap;gap:10px 16px;margin:12px 4px 0}
   .legend span{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
 
-  .swapbar{display:flex;align-items:center;gap:10px;background:var(--brand-soft);border:1px solid #E7C9B2;color:var(--brand-ink);padding:10px 12px;border-radius:12px;margin-bottom:10px;font-size:13.5px;font-weight:600}
+  .swapbar{display:flex;align-items:center;gap:10px;background:var(--brand-soft);border:1px solid var(--brand-line);color:var(--brand-ink);padding:10px 12px;border-radius:12px;margin-bottom:10px;font-size:13.5px;font-weight:600}
 
   /* warnings banner */
-  .warnbox{background:var(--danger-soft);border:1px solid #F0C4C0;border-radius:14px;padding:12px 14px;margin-top:14px}
+  .warnbox{background:var(--danger-soft);border:1px solid var(--wb-rd-line);border-radius:14px;padding:12px 14px;margin-top:14px}
   .warnbox h3{font-size:13px;color:var(--danger);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px}
   .warnbox ul{margin:0;padding-left:18px}
-  .warnbox li{font-size:13.5px;margin:3px 0;color:#7d2622}
+  .warnbox li{font-size:13.5px;margin:3px 0;color:var(--wb-rd-tx)}
+  .warnbox .note{font-size:12.5px;margin:6px 0 0;color:var(--wb-rd-tx)}
+  /* biến thể màu của hộp thông báo (thay cho inline style để tự đổi theo dark) */
+  .wb-ok{background:var(--wb-ok-bg);border-color:var(--wb-ok-line)}
+  .wb-ok h3{color:var(--wb-ok-h)} .wb-ok li,.wb-ok .note{color:var(--wb-ok-tx)}
+  .wb-am{background:var(--wb-am-bg);border-color:var(--wb-am-line)}
+  .wb-am h3{color:var(--wb-am-h)} .wb-am li,.wb-am .note{color:var(--wb-am-tx)}
+  .wb-pu{background:var(--wb-pu-bg);border-color:var(--wb-pu-line)}
+  .wb-pu h3{color:var(--wb-pu-h)} .wb-pu li,.wb-pu .note{color:var(--wb-pu-tx)}
+  .wb-bl{background:var(--wb-bl-bg);border-color:var(--wb-bl-line)}
+  .wb-bl h3{color:var(--wb-bl-h)} .wb-bl li,.wb-bl .note{color:var(--wb-bl-tx)}
+  /* thanh nhắc trong sheet */
+  .swapbar.sb-leave{background:var(--danger-soft);border-color:var(--wb-rd-line);color:var(--danger)}
+  .swapbar.sb-brand{background:var(--brand-soft);border-color:var(--brand-line);color:var(--brand-ink)}
+  /* nút bật/tắt trạng thái trong sheet sửa ca */
+  .btn.on-bike{background:var(--bike-bg);border-color:var(--bike-line);color:var(--bike-ink)}
+  .btn.on-lock{background:var(--brand-soft);border-color:var(--brand-line);color:var(--brand-ink)}
 
   /* ---------- dải tuần mini ---------- */
   .wstrip{display:flex;gap:3px;margin-top:4px}
@@ -158,7 +232,7 @@
   .wcell.hl{border-color:var(--brand);background:var(--brand-soft);box-shadow:0 0 0 1px var(--brand)}
   .wcell .dash{color:var(--line)}
   .pl{display:inline-block;padding:0 1px;font-weight:800;border-radius:3px}
-  .pl.pm{color:#a9660f}.pl.pa{color:#0f7a6c}.pl.pe{color:#5a3fb8}
+  .pl.pm{color:var(--pl-m)}.pl.pa{color:var(--pl-a)}.pl.pe{color:var(--pl-e)}
   .legend .pl{background:var(--surface-2);padding:1px 5px;margin-right:4px}
   /* xem theo người */
   .erow{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line)}
@@ -168,7 +242,7 @@
   .ename small{display:block;color:var(--muted);font-weight:600;font-size:10.5px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .erow .wstrip{flex:1;margin-top:0}
   /* ---------- Today ---------- */
-  .today-hero{background:linear-gradient(155deg,#A82A1E,#6B1610);color:#fff;border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
+  .today-hero{background:linear-gradient(155deg,var(--hero-1),var(--hero-2));color:#fff;border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
   .today-hero .dow{font-size:13px;opacity:.85;font-weight:600}
   .today-hero .nowline{font-size:22px;font-weight:800;letter-spacing:-.02em;margin:3px 0 12px;display:flex;align-items:center;gap:8px}
   .livedot{width:9px;height:9px;border-radius:50%;background:#7CE0A9;box-shadow:0 0 0 0 rgba(124,224,169,.7);animation:pulse 1.8s infinite;flex:0 0 auto}
@@ -176,8 +250,8 @@
   .tblock{margin-top:10px;overflow:hidden;transition:opacity .2s}
   .tblock.dim{opacity:.5}
   .tblock.live{border-color:var(--brand);box-shadow:0 0 0 2px var(--brand-soft),var(--shadow)}
-  .livetag{font-size:9.5px;font-weight:800;letter-spacing:.06em;background:var(--brand);color:#fff;padding:3px 7px;border-radius:6px}
-  .nm2 i.early{background:#F6DFD3;color:#8f3a17}
+  .livetag{font-size:9.5px;font-weight:800;letter-spacing:.06em;background:var(--brand-fill);color:var(--on-brand);padding:3px 7px;border-radius:6px}
+  .nm2 i.early{background:var(--bg-f);color:var(--tx-f)}
   .today-hero .date{font-size:30px;font-weight:800;letter-spacing:-.02em;margin:2px 0 10px}
   .today-hero .stats{display:flex;gap:18px}
   .today-hero .stats div b{display:block;font-size:22px;line-height:1}
@@ -202,7 +276,7 @@
 
   .fab{position:fixed;right:calc(50% - 320px + 18px);bottom:calc(var(--safe-b) + 78px);z-index:35}
   @media(max-width:672px){.fab{right:18px}}
-  .fab button{width:56px;height:56px;border-radius:18px;background:var(--brand);color:#fff;display:grid;place-items:center;box-shadow:0 8px 24px rgba(169,84,31,.4)}
+  .fab button{width:56px;height:56px;border-radius:18px;background:var(--brand-fill);color:var(--on-brand);display:grid;place-items:center;box-shadow:0 8px 24px rgba(0,0,0,.4)}
   .fab button svg{width:26px;height:26px}
 
   /* ---------- Sheet (modal) ---------- */
@@ -227,7 +301,7 @@
   .opt.on small{color:var(--brand)}
   .seg{display:flex;gap:6px;background:var(--surface-2);padding:4px;border-radius:12px;border:1px solid var(--line)}
   .seg button{flex:1;padding:9px 4px;border-radius:9px;font-weight:700;font-size:13px;color:var(--muted)}
-  .seg button.on{background:#fff;color:var(--brand);box-shadow:var(--shadow)}
+  .seg button.on{background:var(--raise);color:var(--seg-on-ink);box-shadow:var(--shadow)}
 
   .existing{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
   .exrow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line)}
@@ -240,24 +314,24 @@
   .mrow:active{background:var(--surface-2)}
   .mrow.hi{background:var(--brand-soft)}
   .mic{width:30px;height:30px;border-radius:9px;background:var(--surface-2);display:grid;place-items:center;font-size:15px;flex:0 0 auto}
-  .mrow.hi .mic{background:#fff}
+  .mrow.hi .mic{background:var(--raise)}
   .mtx{flex:1;min-width:0}
   .mtx b{display:block;font-size:14.5px;font-weight:700}
   .mtx small{display:block;font-size:11.5px;color:var(--muted);margin-top:1px}
-  .toast{position:fixed;left:50%;bottom:calc(var(--safe-b) + 90px);transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;font-size:14px;font-weight:600;z-index:80;opacity:0;transition:.25s;pointer-events:none;box-shadow:var(--shadow)}
+  .toast{position:fixed;left:50%;bottom:calc(var(--safe-b) + 90px);transform:translateX(-50%) translateY(20px);background:var(--toast-bg);color:var(--toast-ink);padding:11px 18px;border-radius:12px;font-size:14px;font-weight:600;z-index:80;opacity:0;transition:.25s;pointer-events:none;box-shadow:var(--shadow)}
   .toast.show{opacity:1;transform:translateX(-50%)}
   /* day selector */
   .daysel{display:flex;gap:6px;margin:2px 0 6px}
   .daysel button{flex:1;padding:8px 2px 6px;border-radius:13px;background:var(--surface);border:1px solid var(--line);font-weight:800;font-size:13.5px;color:var(--muted);line-height:1.1}
   .daysel button small{display:block;font-size:10.5px;font-weight:600;margin-top:2px;opacity:.8}
   .daysel button.today{border-color:var(--brand);color:var(--brand)}
-  .daysel button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .daysel button.on{background:var(--brand-fill);color:var(--on-brand);border-color:var(--brand-fill)}
   .daysel button.on small{opacity:.95}
   /* thanh ngày + nút sửa */
   .dbar{display:flex;align-items:center;gap:10px;margin:12px 2px 2px}
   .dttl{font-weight:800;font-size:15px;flex:1}
   .editbtn{padding:7px 14px;border-radius:11px;border:1px solid var(--line);background:var(--surface);color:var(--brand);font-weight:700;font-size:13.5px}
-  .editbtn.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .editbtn.on{background:var(--brand-fill);color:var(--on-brand);border-color:var(--brand-fill)}
   /* roster blocks */
   .rblock{margin-top:10px;overflow:hidden}
   .rblock.lack{border-color:#EBC9C4}
@@ -279,8 +353,9 @@
   /* sửa: chip */
   .nchip{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);font-weight:600;font-size:13.5px;color:var(--ink)}
   .nchip:active{transform:scale(.96)}
-  .nchip.bike{background:#FFF1D9;border-color:#F0D9A8}
-  .nchip .tt{font-size:10.5px;color:var(--muted);font-weight:700;background:#fff;padding:1px 5px;border-radius:6px;margin-left:2px}
+  .nchip.bike{background:var(--bike-bg);border-color:var(--bike-line);color:var(--bike-ink)}
+  .nchip.locked{box-shadow:inset 0 0 0 1.5px var(--brand)}
+  .nchip .tt{font-size:10.5px;color:var(--muted);font-weight:700;background:var(--raise);padding:1px 5px;border-radius:6px;margin-left:2px}
   .addp{width:28px;height:28px;border-radius:50%;border:1px dashed var(--line);color:var(--muted);font-weight:700;font-size:16px;background:transparent;line-height:1}
   .addp:active{background:var(--brand-soft);color:var(--brand);border-color:var(--brand)}
   /* toggle */
@@ -294,7 +369,7 @@
   .req-tbl td{padding:4px}
   .req-tbl td.rq-per{font-size:13.5px;font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:6px;height:48px}
   .req-tbl .rq-in{width:100%;min-width:52px;height:44px;text-align:center;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-weight:700;font-size:16px}
-  .req-tbl .rq-in:focus{outline:none;border-color:var(--brand);background:#fff}
+  .req-tbl .rq-in:focus{outline:none;border-color:var(--brand);background:var(--focus-bg)}
   .danger-text{color:var(--danger)}
   .link{color:var(--brand);font-weight:700}
   hr.sep{border:0;border-top:1px solid var(--line);margin:14px 0}
@@ -441,7 +516,10 @@ function migrate(r){
   return r;
 }
 function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(DB)); }
-function uid(){ return Math.random().toString(36).slice(2,9); }
+function uid(){
+  try{ if(crypto&&crypto.randomUUID) return crypto.randomUUID(); }catch(e){}
+  return Math.random().toString(36).slice(2,9)+Math.random().toString(36).slice(2,9);
+}
 
 /* ---------- date helpers ---------- */
 function pad(n){return String(n).padStart(2,'0');}
@@ -651,10 +729,10 @@ function dayWarnings(mon,dayIdx,dateStr){
   });
   DB.employees.forEach(e=>{
     if(onLeave(dateStr,e.id) && cellShifts(mon,e.id,dayIdx).length)
-      w.push(`<b>${e.name}</b> đã xin nghỉ nhưng vẫn được xếp ca.`);
+      w.push(`<b>${esc(e.name)}</b> đã xin nghỉ nhưng vẫn được xếp ca.`);
     // sáng + tối cùng ngày = quá mệt
     const pks=[]; cellShifts(mon,e.id,dayIdx).forEach(c=>{const t=typeById(c.typeId); if(t)coveredPeriods(t).forEach(k=>{if(!pks.includes(k))pks.push(k);});});
-    if(pks.includes('m')&&pks.includes('e')) w.push(`<b>${e.name}</b> làm cả ca Sáng lẫn ca Tối trong ngày — quá mệt, nên đổi.`);
+    if(pks.includes('m')&&pks.includes('e')) w.push(`<b>${esc(e.name)}</b> làm cả ca Sáng lẫn ca Tối trong ngày — quá mệt, nên đổi.`);
   });
   return w;
 }
@@ -789,12 +867,12 @@ function renderShiftBlock(mon,day,st){
     h+=`<div class="rrow"><div class="rlabel">${role}${badge}</div><div class="rchips">`;
     if(editMode){
       list.forEach(x=>{
-        h+=`<button class="nchip ${x.c.bike?'bike':''}" data-act="chip" data-day="${day}" data-emp="${x.e.id}" data-ci="${x.ci}">${x.c.bike?'🛵 ':''}${esc(x.e.name)}</button>`;
+        h+=`<button class="nchip ${x.c.bike?'bike':''} ${x.c.lock?'locked':''}" data-act="chip" data-day="${day}" data-emp="${x.e.id}" data-ci="${x.ci}">${x.c.lock?'📌 ':''}${x.c.bike?'🛵 ':''}${esc(x.e.name)}</button>`;
       });
       h+=`<button class="addp" data-act="add" data-day="${day}" data-st="${st.id}" data-role="${esc(role)}" aria-label="Thêm">+</button>`;
     }else{
       if(list.length){
-        h+=`<div class="names">`+list.map(x=>`<span class="nm2">${x.c.bike?'🛵 ':''}${esc(x.e.name)}</span>`).join('<span class="sep">·</span>')+`</div>`;
+        h+=`<div class="names">`+list.map(x=>`<span class="nm2">${x.c.lock?'📌 ':''}${x.c.bike?'🛵 ':''}${esc(x.e.name)}</span>`).join('<span class="sep">·</span>')+`</div>`;
       } else h+=`<span class="nobody">chưa có ai</span>`;
     }
     h+=`</div></div>`;
@@ -838,7 +916,7 @@ function openAddSheet(day,stId,role){
       const bits=[]; if(yTxt)bits.push(yTxt); bits.push('tuần: '+wk+' ca');
       const sub=leave?'<span class="danger-text">🌙 đã xin nghỉ</span>':bits.join(' · ');
       const flag= clash?'<span class="pill bg-full">⚠️ kẹt Sáng+Tối</span>' : (lateY?'<span class="pill bg-e">⚠️ tối hôm qua</span>':(free?'<span class="pill bg-a">✓ rảnh</span>':''));
-      return `<button class="exrow" data-pick="${e.id}" style="width:100%;text-align:left"><div class="av" style="width:32px;height:32px;font-size:12px;border-radius:50%;background:${free?'#D8F0EC':'var(--brand-soft)'};color:var(--brand-ink);display:grid;place-items:center;font-weight:800">${initials(e.name)}</div><div style="flex:1;min-width:0"><b>${esc(e.name)}</b><div class="muted" style="font-size:11.5px">${sub}</div>${empWeekStrip(mon,e.id,day)}</div>${flag}</button>`;
+      return `<button class="exrow" data-pick="${e.id}" style="width:100%;text-align:left"><div class="av" style="width:32px;height:32px;font-size:12px;border-radius:50%;background:${free?'var(--bg-a)':'var(--brand-soft)'};color:${free?'var(--tx-a)':'var(--brand-ink)'};display:grid;place-items:center;font-weight:800">${initials(e.name)}</div><div style="flex:1;min-width:0"><b>${esc(e.name)}</b><div class="muted" style="font-size:11.5px">${sub}</div>${empWeekStrip(mon,e.id,day)}</div>${flag}</button>`;
     }).join('')+`</div>`; }
   document.getElementById('sheet').innerHTML=html;
   document.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{
@@ -862,19 +940,26 @@ function openAssignSheet(day,empId,ci){
   html+=`<div class="field"><label>Vị trí</label><div class="seg" id="posSeg">`+
     DB.settings.positions.map(pp=>`<button data-p="${esc(pp)}" class="${c.pos===pp?'on':''}">${esc(pp)}</button>`).join('')+`</div></div>`;
   const pkOf=(cur&&coveredPeriods(cur)[0])||null;
-  if(c.pos==='Phục vụ'&&pkOf) html+=`<button class="btn ghost wide" id="bikeBtn" style="margin-top:6px;${c.bike?'background:#FFF1D9;border-color:#F0D9A8;color:#8a5410':''}">${c.bike?'🛵 Đang giữ xe — bấm để bỏ':'🛵 Đặt làm người giữ xe'}</button>`;
+  if(c.pos==='Phục vụ'&&pkOf) html+=`<button class="btn ghost wide ${c.bike?'on-bike':''}" id="bikeBtn" style="margin-top:6px">${c.bike?'🛵 Đang giữ xe — bấm để bỏ':'🛵 Đặt làm người giữ xe'}</button>`;
+  html+=`<button class="btn ghost wide ${c.lock?'on-lock':''}" id="lockBtn" style="margin-top:6px">${c.lock?'📌 Đang ghim — bấm để bỏ ghim':'📌 Ghim ca (tự xếp không đụng)'}</button>`;
   html+=`<button class="btn ghost wide danger-text" id="rmShift" style="margin-top:6px">Xoá ca này</button>
     <button class="btn wide" id="doneShift" style="margin-top:10px">Xong</button>`;
   document.getElementById('sheet').innerHTML=html;
   const bb=document.getElementById('bikeBtn');
   if(bb) bb.onclick=()=>{ setBikeFor(day,pkOf, c.bike?null:e.id); closeSheet(); renderWeek(); };
-  let draft={typeId:c.typeId,pos:c.pos,bike:c.bike};
+  let draft={typeId:c.typeId,pos:c.pos,bike:c.bike,lock:c.lock};
+  const lb=document.getElementById('lockBtn');
+  lb.onclick=()=>{
+    draft.lock=!draft.lock;
+    lb.textContent=draft.lock?'📌 Đang ghim — bấm để bỏ ghim':'📌 Ghim ca (tự xếp không đụng)';
+    lb.classList.toggle('on-lock',draft.lock);
+  };
   document.querySelectorAll('.opt-grid .opt').forEach(b=>b.onclick=()=>{draft.typeId=b.dataset.t;document.querySelectorAll('.opt-grid .opt').forEach(z=>z.classList.toggle('on',z===b));});
   document.querySelectorAll('#posSeg button').forEach(b=>b.onclick=()=>{draft.pos=b.dataset.p;document.querySelectorAll('#posSeg button').forEach(z=>z.classList.toggle('on',z===b));});
   document.getElementById('rmShift').onclick=()=>{ arr.splice(ci,1); setCell(mon,e.id,day,arr); closeSheet(); toast('Đã xoá'); renderWeek(); };
   document.getElementById('doneShift').onclick=()=>{
     if(draft.pos!=='Phục vụ') draft.bike=false;
-    arr[ci]={typeId:draft.typeId,pos:draft.pos,...(draft.bike?{bike:true}:{})};
+    arr[ci]={typeId:draft.typeId,pos:draft.pos,...(draft.bike?{bike:true}:{}),...(draft.lock?{lock:true}:{})};
     setCell(mon,e.id,day,arr); closeSheet(); renderWeek();
   };
   openSheet();
@@ -906,26 +991,6 @@ function bindWeekNav(){
   document.getElementById('wToday').onclick=()=>{curMonday=mondayOf(new Date());selDay=null;renderWeek();};
   const m=document.getElementById('wMore'); if(m) m.onclick=openActionsSheet;
 }
-function bindGridCells(){
-  document.querySelectorAll('#v-week td.cell').forEach(td=>{
-    td.onclick=()=>{
-      const empId=td.dataset.emp, day=+td.dataset.day;
-      if(swapMode){ handleSwap(empId,day); return; }
-      openCellSheet(empId,day);
-    };
-  });
-}
-function handleSwap(empId,day){
-  if(!swapSel){ swapSel={empId,day}; renderWeek(); return; }
-  if(swapSel.empId===empId&&swapSel.day===day){ swapSel=null; renderWeek(); return; }
-  const a=cellShifts(curMonday,swapSel.empId,swapSel.day).slice();
-  const b=cellShifts(curMonday,empId,day).slice();
-  setCell(curMonday,swapSel.empId,swapSel.day,b);
-  setCell(curMonday,empId,day,a);
-  swapSel=null;
-  toast('Đã đổi ca');
-  renderWeek();
-}
 function copyPrevWeek(){
   const prev=addDays(curMonday,-7);
   const src=DB.schedule[weekKey(prev)];
@@ -933,25 +998,6 @@ function copyPrevWeek(){
   DB.schedule[weekKey(curMonday)]=JSON.parse(JSON.stringify(src));
   save(); toast('Đã chép lịch tuần trước'); renderWeek();
 }
-function weekWarnings(mon){
-  const w=[];
-  for(let d=0;d<7;d++){
-    const ds=ymd(addDays(mon,d));
-    DB.shiftTypes.forEach(st=>{
-      const req=reqFor(st);
-      const have=staffCount(mon,d,st.id);
-      const total=Object.values(have).reduce((a,b)=>a+b,0);
-      if(!total) return;
-      Object.keys(req).forEach(role=>{
-        const need=req[role], got=have[role]||0;
-        if(got<need) w.push(`<b>${DOW[d]}</b> ca ${st.label} thiếu ${role}: ${got}/${need}.`);
-      });
-    });
-    DB.employees.forEach(e=>{ if(onLeave(ds,e.id)&&cellShifts(mon,e.id,d).length) w.push(`<b>${DOW[d]}</b>: ${e.name} xin nghỉ nhưng vẫn có ca.`); });
-  }
-  return w.slice(0,10);
-}
-
 /* ---------- cell editor sheet ---------- */
 let sheetState=null;
 function openCellSheet(empId,day){
@@ -965,9 +1011,9 @@ function drawCellSheet(e,date,leave){
   const s=sheetState;
   const defPos=e.pos||'';
   let html=`<div class="grip"></div>
-    <h2>${e.name}</h2>
+    <h2>${esc(e.name)}</h2>
     <div class="sub">${DOW_FULL[(date.getDay()+6)%7]}, ${dmShort(date)}</div>`;
-  if(leave) html+=`<div class="swapbar" style="background:var(--danger-soft);border-color:#F0C4C0;color:var(--danger)">🌙 Nhân viên này đã xin nghỉ hôm nay.</div>`;
+  if(leave) html+=`<div class="swapbar sb-leave">🌙 Nhân viên này đã xin nghỉ hôm nay.</div>`;
 
   if(s.draft.length){
     html+=`<div class="existing">`;
@@ -1134,7 +1180,7 @@ function showImportPreview(people){
   const mon=curMonday;
   let html=`<div class="grip"></div><h2>Nhận đăng ký rảnh</h2>
     <div class="sub">Tuần ${dmShort(mon)} – ${dmShort(addDays(mon,6))} · ${people.length} người · ${totalClaims} buổi rảnh</div>
-    <div class="swapbar" style="background:var(--brand-soft);border-color:#E7C9B2;color:var(--brand-ink)">
+    <div class="swapbar sb-brand">
       App sẽ tự xếp ca cân bằng từ các buổi rảnh (đủ định mức, chia đều, ưu tiên người ít ca). Bạn chỉnh tay được sau.</div>
     <div class="existing" style="max-height:34vh;overflow:auto">`;
   people.forEach(p=>{ html+=`<div class="exrow"><div class="av" style="width:30px;height:30px;font-size:12px;border-radius:50%;background:var(--brand-soft);color:var(--brand-ink);display:grid;place-items:center;font-weight:800">${initials(p.name)}</div>
@@ -1233,6 +1279,18 @@ function runAutoSchedule(mon){
       });
     }
   }
+  // giữ nguyên các ca đã GHIM (📌) từ lịch hiện có — tự xếp không đụng vào
+  const prevWk=DB.schedule[wk]||{};
+  DB.employees.forEach(e=>{
+    for(let d=0;d<7;d++){
+      (prevWk[e.id]&&prevWk[e.id][d]||[]).forEach(c=>{
+        if(!c.lock) return;
+        const st=typeById(c.typeId); if(!st) return;   // bỏ qua ca có khung giờ đã xoá
+        newWeek[e.id]=newWeek[e.id]||{}; (newWeek[e.id][d]=newWeek[e.id][d]||[]).push({...c});
+        load[e.id]++; const pk=coveredPeriods(st)[0]; if(pk) cnt[e.id][pk]++;
+      });
+    }
+  });
   fillPass(false);                                   // vòng 1: công bằng, nhân đạo
   if(DB.settings.coverFirst!==false) fillPass(true); // vòng 2: phủ nốt chỗ trống (cho 2 buổi/ngày)
   // tính chỗ còn trống (theo từng CA)
@@ -1255,32 +1313,37 @@ function runAutoSchedule(mon){
   // gộp danh sách người bị xếp 2 buổi/ngày
   const dblMap={}; doubled.forEach(x=>{ (dblMap[x.name]=dblMap[x.name]||[]).push(DOW[x.day]); });
   const doubles=Object.keys(dblMap).map(n=>({name:n,days:[...new Set(dblMap[n])]}));
-  return {gaps, under, underToi, doubles, load, minS, minToi};
+  // ai chưa đăng ký buổi rảnh nào cho tuần này (có trong DS nhân viên nhưng thiếu trong avail)
+  const noReg=DB.employees.filter(e=>{
+    const a=avail[e.id]; return !a || !Object.keys(a).some(d=>(a[d]||[]).length);
+  }).map(e=>e.name);
+  return {gaps, under, underToi, doubles, noReg, load, minS, minToi};
 }
 function autoScheduleBtn(){
   const mon=curMonday, wk=weekKey(mon);
   if(!DB.availability||!DB.availability[wk]||!Object.keys(DB.availability[wk]).length){ toast('Chưa có đăng ký rảnh — Nhập/Đồng bộ trước'); return; }
-  if(!confirm('Tự xếp lại lịch tuần này từ đăng ký rảnh? Các chỉnh tay hiện có sẽ bị thay.')) return;
+  if(!confirm('Tự xếp lại lịch tuần này từ đăng ký rảnh? Các chỉnh tay hiện có sẽ bị thay (trừ ca đã ghim 📌).')) return;
   const res=runAutoSchedule(mon); showScheduleResult(res); renderWeek();
 }
 function pkName(pk){return PERIODS.find(p=>p.key===pk).name;}
 function showScheduleResult(res){
-  const {created=[],gaps=[],under=[],underToi=[],doubles=[],minS=0,minToi=0}=res; const mon=curMonday;
+  const {created=[],gaps=[],under=[],underToi=[],doubles=[],noReg=[],minS=0,minToi=0}=res; const mon=curMonday;
   let html=`<div class="grip"></div><h2>✅ Đã tự xếp ca</h2><div class="sub">Tuần ${dmShort(mon)} – ${dmShort(addDays(mon,6))} · đã chia cân bằng</div>`;
-  if(created.length) html+=`<div class="warnbox" style="background:#E7F3EC;border-color:#BEE0CB"><h3 style="color:#1f7a4d">Đã thêm ${created.length} nhân viên mới</h3><ul>${created.map(n=>`<li style="color:#256b45">${esc(n)} — nhớ đặt lương/giờ ở tab Nhân viên</li>`).join('')}</ul></div>`;
-  if(gaps.length) html+=`<div class="warnbox"><h3>⚠️ Thiếu người (không đủ người rảnh)</h3><ul>${gaps.map(g=>`<li><b>${DOW[g.day]}</b> ca ${g.label||pkName(g.pk)} · ${g.role}: ${g.filled}/${g.need}</li>`).join('')}</ul><p style="font-size:12.5px;margin:6px 0 0;color:#7d2622">Vào ngày đó bấm "+ Thêm" để xếp bù.</p></div>`;
-  if(under.length) html+=`<div class="warnbox" style="background:#FFF4E0;border-color:#F0D9A8"><h3 style="color:#9a6a10">Chưa đủ ${minS} ca tối thiểu</h3><ul>${under.map(u=>`<li style="color:#7a5410">${esc(u.name)}: ${u.got}/${minS} ca (do rảnh ít hoặc ca đã đầy)</li>`).join('')}</ul></div>`;
+  if(created.length) html+=`<div class="warnbox wb-ok"><h3>Đã thêm ${created.length} nhân viên mới</h3><ul>${created.map(n=>`<li>${esc(n)} — nhớ đặt lương/giờ ở tab Nhân viên</li>`).join('')}</ul></div>`;
+  if(noReg.length) html+=`<div class="warnbox wb-am"><h3>Chưa đăng ký buổi rảnh (${noReg.length})</h3><ul>${noReg.map(n=>`<li>${esc(n)}</li>`).join('')}</ul><p class="note">Các bạn này không có buổi rảnh nào trong tuần nên chưa được tự xếp. Nhắc đăng ký, hoặc bấm "+ Thêm" để xếp tay.</p></div>`;
+  if(gaps.length) html+=`<div class="warnbox"><h3>⚠️ Thiếu người (không đủ người rảnh)</h3><ul>${gaps.map(g=>`<li><b>${DOW[g.day]}</b> ca ${g.label||pkName(g.pk)} · ${g.role}: ${g.filled}/${g.need}</li>`).join('')}</ul><p class="note">Vào ngày đó bấm "+ Thêm" để xếp bù.</p></div>`;
+  if(under.length) html+=`<div class="warnbox wb-am"><h3>Chưa đủ ${minS} ca tối thiểu</h3><ul>${under.map(u=>`<li>${esc(u.name)}: ${u.got}/${minS} ca (do rảnh ít hoặc ca đã đầy)</li>`).join('')}</ul></div>`;
   if(underToi.length){
     const capRoles=[...new Set(underToi.filter(u=>u.why==='cap').map(u=>u.role))];
-    html+=`<div class="warnbox" style="background:#EFEAFB;border-color:#D6CBF3"><h3 style="color:#5b45a8">Chưa đủ ${minToi} ca tối</h3><ul>${underToi.map(u=>{
+    html+=`<div class="warnbox wb-pu"><h3>Chưa đủ ${minToi} ca tối</h3><ul>${underToi.map(u=>{
       const why = u.why==='avail' ? `chỉ đăng ký rảnh ${u.availToi} buổi tối`
                 : u.why==='cap'   ? `hết suất — ca tối chỉ có ${u.cap} suất/tuần cho ${u.nRole} bạn ${u.role}`
                 : `ca tối đã đủ người khác`;
-      return `<li style="color:#4b3a8a"><b>${esc(u.name)}</b>: ${u.got}/${minToi} ca tối — ${why}</li>`;
-    }).join('')}</ul>${capRoles.length?`<p style="font-size:12.5px;margin:8px 0 0;color:#4b3a8a">💡 Không thể ai cũng đủ ${minToi} ca tối: số ${capRoles.join('/')} đang nhiều hơn số suất tối. Hạ "Số ca tối tối thiểu" xuống, hoặc tăng định mức ca Tối, hoặc chấp nhận vài bạn ít ca tối hơn.</p>`:''}</div>`;
+      return `<li><b>${esc(u.name)}</b>: ${u.got}/${minToi} ca tối — ${why}</li>`;
+    }).join('')}</ul>${capRoles.length?`<p class="note">💡 Không thể ai cũng đủ ${minToi} ca tối: số ${capRoles.join('/')} đang nhiều hơn số suất tối. Hạ "Số ca tối tối thiểu" xuống, hoặc tăng định mức ca Tối, hoặc chấp nhận vài bạn ít ca tối hơn.</p>`:''}</div>`;
   }
-  if(doubles.length) html+=`<div class="warnbox" style="background:#E7F1FB;border-color:#C4DBF0"><h3 style="color:#2b5f8a">Làm 2 buổi/ngày (để phủ đủ ca)</h3><ul>${doubles.map(x=>`<li style="color:#274e6e"><b>${esc(x.name)}</b> · ${x.days.join(', ')}</li>`).join('')}</ul><p style="font-size:12.5px;margin:6px 0 0;color:#274e6e">Do vị trí này thiếu người. Không có ca Sáng+Tối kiểu 7h→nửa đêm — chỉ ghép liền mạch.</p></div>`;
-  if(!gaps.length&&!under.length&&!underToi.length&&!doubles.length) html+=`<div class="empty" style="padding:20px"><div class="big">🎉</div>Đủ người mọi ca, chia cân bằng!</div>`;
+  if(doubles.length) html+=`<div class="warnbox wb-bl"><h3>Làm 2 buổi/ngày (để phủ đủ ca)</h3><ul>${doubles.map(x=>`<li><b>${esc(x.name)}</b> · ${x.days.join(', ')}</li>`).join('')}</ul><p class="note">Do vị trí này thiếu người. Không có ca Sáng+Tối kiểu 7h→nửa đêm — chỉ ghép liền mạch.</p></div>`;
+  if(!gaps.length&&!under.length&&!underToi.length&&!doubles.length&&!noReg.length) html+=`<div class="empty" style="padding:20px"><div class="big">🎉</div>Đủ người mọi ca, chia cân bằng!</div>`;
   html+=`<button class="btn wide" id="okImport" style="margin-top:12px">Xem lịch tuần</button>`;
   document.getElementById('sheet').innerHTML=html;
   document.getElementById('okImport').onclick=closeSheet;
@@ -1321,7 +1384,7 @@ function exportWeekImage(){
   }
   x.textAlign='left';
   // rows
-  let hasBike=false;
+  let hasBike=false, hasLeave=false, hasEarly=false, anyShift=false;
   emps.forEach((e,r)=>{
     const ry=oy+headH+rowH*r;
     x.fillStyle=r%2?col.surf:'#FBF5EC'; x.fillRect(ox,ry,nameW+colW*7,rowH);
@@ -1331,7 +1394,19 @@ function exportWeekImage(){
     x.fillStyle=col.muted; x.font='600 12px system-ui,sans-serif';
     x.fillText(fmtH(wh)+(e.rate?' · '+money(wh*e.rate):''),ox+10,ry+34);
     for(let d=0;d<7;d++){
+      const ds=ymd(addDays(mon,d));
       const shifts=cellShifts(mon,e.id,d); const cx=ox+nameW+colW*d;
+      const early=DB.early.find(z=>z.empId===e.id && z.date===ds);
+      if(!shifts.length){
+        if(onLeave(ds,e.id)){
+          hasLeave=true;
+          x.fillStyle=col.off; roundRect(x,cx+6,ry+8,colW-12,44,7); x.fill();
+          x.fillStyle=col.offT; x.font='700 12px system-ui,sans-serif';
+          x.fillText('🌙 nghỉ',cx+12,ry+21);
+        }
+        continue;
+      }
+      anyShift=true;
       let cy=ry+8;
       shifts.slice(0,2).forEach(c=>{
         const t=typeById(c.typeId); if(!t)return;
@@ -1340,7 +1415,11 @@ function exportWeekImage(){
         x.fillStyle=col[cls]; roundRect(x,cx+6,cy,colW-12,shifts.length>1?22:44,7); x.fill();
         x.fillStyle=col[cls+'T']; x.font='700 12px system-ui,sans-serif';
         x.fillText((c.bike?'🛵 ':'')+t.label,cx+12,cy+ (shifts.length>1?5:6));
-        if(shifts.length===1&&c.pos){x.font='600 11px system-ui,sans-serif';x.fillText((c.bike?'🛵 ':'')+c.pos,cx+12,cy+24);}
+        if(shifts.length===1){
+          x.font='600 11px system-ui,sans-serif';
+          if(c.pos) x.fillText((c.bike?'🛵 ':'')+c.pos,cx+12,cy+24);
+          if(early){ hasEarly=true; x.fillStyle=col.fullT; x.fillText('🏃 về '+early.time,cx+12,cy+38); }
+        }
         cy+= shifts.length>1?26:0;
       });
     }
@@ -1350,9 +1429,23 @@ function exportWeekImage(){
   for(let d=0;d<=7;d++){const cx=ox+nameW+colW*d;x.beginPath();x.moveTo(cx,oy);x.lineTo(cx,oy+headH+rowH*emps.length);x.stroke();}
   for(let r=0;r<=emps.length;r++){const ry=oy+headH+rowH*r;x.beginPath();x.moveTo(ox,ry);x.lineTo(ox+nameW+colW*7,ry);x.stroke();}
   x.beginPath();x.moveTo(ox,oy);x.lineTo(ox+nameW+colW*7,oy);x.stroke();
+  // thông báo khi cả tuần chưa xếp ai
+  if(!anyShift){
+    const gx=ox+nameW, gw=colW*7, gy=oy+headH, gh=rowH*emps.length;
+    x.save();
+    x.fillStyle='rgba(245,237,225,.78)'; x.fillRect(gx,gy,gw,gh);
+    x.fillStyle=col.muted; x.font='700 16px system-ui,sans-serif';
+    x.textAlign='center'; x.textBaseline='middle';
+    x.fillText('Tuần này chưa xếp ca',gx+gw/2,gy+gh/2);
+    x.restore(); x.textBaseline='top'; x.textAlign='left';
+  }
   // footer
+  const legend=['Tiệm Cà Phê Cá Hồi · app Xếp Ca'];
+  if(hasBike) legend.push('🛵 = người giữ xe');
+  if(hasLeave) legend.push('🌙 = nghỉ');
+  if(hasEarly) legend.push('🏃 = về sớm');
   x.fillStyle=col.muted; x.font='600 12px system-ui,sans-serif';
-  x.fillText('Tiệm Cà Phê Cá Hồi · app Xếp Ca'+(hasBike?'  ·  🛵 = người giữ xe':''),ox,oy+headH+rowH*emps.length+12);
+  x.fillText(legend.join('   ·   '),ox,oy+headH+rowH*emps.length+12);
 
   cv.toBlob(blob=>{
     const file=new File([blob],`lich-tuan-${dmShort(mon).replace('/','-')}.png`,{type:'image/png'});
@@ -1381,7 +1474,7 @@ function renderStaff(){
     DB.employees.forEach(e=>{
       const wh=weekHours(mon,e.id);
       html+=`<div class="li" data-emp="${e.id}"><div class="av">${initials(e.name)}</div>
-        <div class="info"><b>${e.name}</b><span>${e.pos||'—'}${e.rate?' · '+money(e.rate)+'/h':''}${e.phone?' · '+e.phone:''}</span></div>
+        <div class="info"><b>${esc(e.name)}</b><span>${esc(e.pos||'—')}${e.rate?' · '+money(e.rate)+'/h':''}${e.phone?' · '+esc(e.phone):''}</span></div>
         <div style="text-align:right"><div class="tnum" style="font-weight:700">${fmtH(wh)}</div><div class="muted" style="font-size:11px">tuần này</div></div>
         <span class="chev">›</span></div>`;
     });
@@ -1445,7 +1538,7 @@ function renderLeave(){
     html+= items.length?`<div class="card" style="margin-top:12px">`+items.map(l=>{
       const e=empById(l.empId); const past=(l.dateEnd||l.date)<today;
       return `<div class="li" data-leave="${l.id}"><div class="av">${e?initials(e.name):'?'}</div>
-        <div class="info"><b>${e?e.name:'(đã xoá)'}</b><span>${fmtRange(l.date,l.dateEnd)}${l.reason?' · '+esc(l.reason):''}</span></div>
+        <div class="info"><b>${e?esc(e.name):'(đã xoá)'}</b><span>${fmtRange(l.date,l.dateEnd)}${l.reason?' · '+esc(l.reason):''}</span></div>
         ${past?'<span class="pill bg-off">Đã qua</span>':''}<span class="chev">›</span></div>`;
     }).join('')+`</div>` : `<div class="empty"><div class="big">🌙</div>Chưa có đơn xin nghỉ.<br>Bấm <b>+</b> để thêm.</div>`;
   }else{
@@ -1453,7 +1546,7 @@ function renderLeave(){
     html+= items.length?`<div class="card" style="margin-top:12px">`+items.map(l=>{
       const e=empById(l.empId); const past=l.date<today;
       return `<div class="li" data-early="${l.id}"><div class="av">${e?initials(e.name):'?'}</div>
-        <div class="info"><b>${e?e.name:'(đã xoá)'}</b><span>${fmtDate(l.date)} · về lúc ${l.time}${l.reason?' · '+esc(l.reason):''}</span></div>
+        <div class="info"><b>${e?esc(e.name):'(đã xoá)'}</b><span>${fmtDate(l.date)} · về lúc ${l.time}${l.reason?' · '+esc(l.reason):''}</span></div>
         ${past?'<span class="pill bg-off">Đã qua</span>':''}<span class="chev">›</span></div>`;
     }).join('')+`</div>` : `<div class="empty"><div class="big">🏃</div>Chưa có đơn về sớm.<br>Bấm <b>+</b> để thêm.</div>`;
   }
