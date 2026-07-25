@@ -1321,6 +1321,7 @@ function exportWeekImage(){
   }
   x.textAlign='left';
   // rows
+  let hasBike=false;
   emps.forEach((e,r)=>{
     const ry=oy+headH+rowH*r;
     x.fillStyle=r%2?col.surf:'#FBF5EC'; x.fillRect(ox,ry,nameW+colW*7,rowH);
@@ -1335,10 +1336,11 @@ function exportWeekImage(){
       shifts.slice(0,2).forEach(c=>{
         const t=typeById(c.typeId); if(!t)return;
         const cls=shiftClass(t);
+        if(c.bike) hasBike=true;
         x.fillStyle=col[cls]; roundRect(x,cx+6,cy,colW-12,shifts.length>1?22:44,7); x.fill();
         x.fillStyle=col[cls+'T']; x.font='700 12px system-ui,sans-serif';
-        x.fillText(t.label,cx+12,cy+ (shifts.length>1?5:6));
-        if(shifts.length===1&&c.pos){x.font='600 11px system-ui,sans-serif';x.fillText(c.pos,cx+12,cy+24);}
+        x.fillText((c.bike?'🛵 ':'')+t.label,cx+12,cy+ (shifts.length>1?5:6));
+        if(shifts.length===1&&c.pos){x.font='600 11px system-ui,sans-serif';x.fillText((c.bike?'🛵 ':'')+c.pos,cx+12,cy+24);}
         cy+= shifts.length>1?26:0;
       });
     }
@@ -1350,7 +1352,7 @@ function exportWeekImage(){
   x.beginPath();x.moveTo(ox,oy);x.lineTo(ox+nameW+colW*7,oy);x.stroke();
   // footer
   x.fillStyle=col.muted; x.font='600 12px system-ui,sans-serif';
-  x.fillText('Tiệm Cà Phê Cá Hồi · app Xếp Ca',ox,oy+headH+rowH*emps.length+12);
+  x.fillText('Tiệm Cà Phê Cá Hồi · app Xếp Ca'+(hasBike?'  ·  🛵 = người giữ xe':''),ox,oy+headH+rowH*emps.length+12);
 
   cv.toBlob(blob=>{
     const file=new File([blob],`lich-tuan-${dmShort(mon).replace('/','-')}.png`,{type:'image/png'});
