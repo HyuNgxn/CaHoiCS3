@@ -1,0 +1,18 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');const vm=require('node:vm');const path=require('node:path');
+const ctx=vm.createContext({Date,JSON});vm.runInContext(fs.readFileSync(path.join(__dirname,'../history.js'),'utf8'),ctx);
+const update=ctx.updateWeekHistory,clone=x=>JSON.parse(JSON.stringify(x)),start=1800000000000;
+const db={employees:[{id:'a',name:'An'}],shiftTypes:[{id:'s',label:'7h-12h30'}],schedule:{'2026-08-31':{a:{0:[{typeId:'s'}]}}}};
+update(db,null,start);assert.equal(db.weekHistory['2026-08-31'].updatedAt,start);
+const old=clone(db);update(db,old,start+23*3600000);assert.equal(db.weekHistory['2026-08-31'].sealedAt,null);
+update(db,clone(db),start+24*3600000);assert.equal(db.weekHistory['2026-08-31'].sealedAt,start+24*3600000);
+const sealed=clone(db);db.schedule['2026-09-07']={a:{1:[{typeId:'s'}]}};update(db,sealed,start+25*3600000);
+assert.deepEqual(db.schedule['2026-08-31'],old.schedule['2026-08-31']);assert.deepEqual(clone(db.weekHistory['2026-08-31']),sealed.weekHistory['2026-08-31']);
+const beforeEdit=clone(db);db.schedule['2026-08-31'].a[0].push({typeId:'s',pos:'Phục vụ'});update(db,beforeEdit,start+26*3600000);
+assert.equal(db.weekHistory['2026-08-31'].sealedAt,null);assert.equal(db.weekHistory['2026-08-31'].updatedAt,start+26*3600000);
+update(db,clone(db),start+50*3600000);assert.equal(db.weekHistory['2026-08-31'].sealedAt,start+50*3600000);
+const reload=JSON.parse(JSON.stringify(db));assert.equal(reload.schedule['2026-08-31'].a[0].length,2);
+assert.equal(reload.weekHistory['2026-08-31'].schedule.a[0].length,2);
+assert.equal(reload.schedule['2026-09-07'].a[1].length,1);
+const stable=clone(reload);reload.settings={branch:'Khác'};update(reload,stable,start+60*3600000);assert.equal(reload.weekHistory['2026-08-31'].updatedAt,start+26*3600000);
+console.log('PASS: 23h/24h boundary, next-week isolation, edits restart 24h, closed-app catch-up, latest data after reload, settings do not reset clock.');

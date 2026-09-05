@@ -1,13 +1,15 @@
+<!doctype html>
+<html lang="vi">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#8C2018" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#17120F" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Cá Hồi">
+<meta name="apple-mobile-web-app-title" content="Lịch bơi">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<title>Cá Hồi — Xếp Ca</title>
+<title>Lịch bơi — Ver 2.0</title>
 <style>
   :root{
     --bg:#F5EDE7; --surface:#FFFCFA; --surface-2:#FBF3EF;
@@ -374,7 +376,17 @@
   .link{color:var(--brand);font-weight:700}
   hr.sep{border:0;border-top:1px solid var(--line);margin:14px 0}
 </style>
+<link rel="stylesheet" href="ui.css?v=27">
+<link rel="stylesheet" href="iphone.css?v=27">
+<link rel="stylesheet" href="minimal.css?v=27">
+<link rel="stylesheet" href="soft.css?v=200">
+<script src="history.js?v=28"></script>
+<script src="ui.js?v=200"></script>
+<script src="snapshot.js?v=201"></script>
+<script src="cloud-config.js?v=202"></script>
+<script src="publishing.js?v=204"></script>
 
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
 <div id="app">
   <header class="top">
     <div class="cup" aria-hidden="true">
@@ -384,12 +396,15 @@
       </g></svg>
     </div>
     <div class="ttl"><b id="brandName">Tiệm Cà Phê Cá Hồi</b><span id="brandSub">Cơ sở 3</span></div>
+    <div class="local-status"><span></span>Lưu trên thiết bị</div>
+    <button class="icon-btn" id="themeToggle" aria-label="Đổi giao diện sáng tối" title="Đổi giao diện sáng tối"></button>
     <button class="icon-btn" id="btnSettings" aria-label="Cài đặt">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
   </header>
 
-  <main>
+  <main id="main-content" tabindex="-1">
+    <div id="pageHeader"></div>
     <section class="view" id="v-today"></section>
     <section class="view active" id="v-week"></section>
     <section class="view" id="v-staff"></section>
@@ -400,16 +415,21 @@
 
 <div class="fab" id="fab" style="display:none"><button id="fabBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
 
-<nav class="tabs">
+<nav class="tabs" aria-label="Điều hướng chính">
+  <div class="side-brand"><div class="fish-mark" aria-hidden="true"><svg viewBox="0 0 64 40" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"><path d="M18 20c8-11 24-14 34-6 4 3 7 6 8 6-1 0-4 3-8 6-10 8-26 5-34-6zM18 20L7 11v18z"/><circle cx="49" cy="18" r="1"/></svg></div><div><b>Cá Hồi<span class="brand-period">.</span></b><small>TIỆM CÀ PHÊ · XẾP CA</small></div></div>
+  <div class="nav-label">KHÔNG GIAN QUẢN LÝ</div>
   <button data-tab="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg><span>Hôm nay</span></button>
   <button data-tab="week" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg><span>Lịch tuần</span></button>
   <button data-tab="staff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13A4 4 0 0 1 16 11"/></svg><span>Nhân viên</span></button>
   <button data-tab="leave"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/></svg><span>Nghỉ/Sớm</span></button>
+  <button data-tab="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="var(--surface)"/><circle cx="15" cy="17" r="3" fill="var(--surface)"/></svg><span>Cài đặt</span></button>
+  <div class="side-note"><span class="side-note-icon" aria-hidden="true">↗</span><b>Một tuần nhịp nhàng.</b><p>Lịch rõ ràng, cả đội cùng nhịp.</p><a href="?demo=1#week">Khám phá bản mẫu <span aria-hidden="true">→</span></a></div>
+  <div class="side-footer"><span class="branch-avatar">CH</span><div><b id="sideBranch">Cơ sở 3</b><small>Không gian nội bộ</small></div></div>
 </nav>
 
 <div class="backdrop" id="backdrop"></div>
-<div class="sheet" id="sheet"></div>
-<div class="toast" id="toast"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Chỉnh sửa" tabindex="-1" inert></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 <input type="file" id="importFile" accept=".csv,text/csv,application/vnd.ms-excel" style="display:none">
 
 <script>
@@ -418,7 +438,8 @@
    ============================================================ */
 const DOW = ['T2','T3','T4','T5','T6','T7','CN'];
 const DOW_FULL = ['Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy','Chủ Nhật'];
-const STORE_KEY = 'xepca_v1';
+const DEMO_MODE = new URLSearchParams(location.search).get('demo') === '1';
+const STORE_KEY = DEMO_MODE ? 'xepca_ui_demo_v1' : 'xepca_v1';
 
 /* ---------- default data ---------- */
 function defaultData(){
@@ -515,7 +536,13 @@ function migrate(r){
   r.availability=r.availability||{};   // weekKey -> empId -> {dayIdx:[periodKeys]}
   return r;
 }
-function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(DB)); }
+function save(){
+  let previous=null;
+  try{previous=JSON.parse(localStorage.getItem(STORE_KEY));}catch(e){}
+  updateWeekHistory(DB,previous);
+  try{localStorage.setItem(STORE_KEY, JSON.stringify(DB));}
+  catch(e){alert('Không lưu được dữ liệu trên máy. Hãy xuất file sao lưu trong mục Thêm trước khi đóng ứng dụng. Có thể bộ nhớ trình duyệt đã đầy.');throw e;}
+}
 function uid(){
   try{ if(crypto&&crypto.randomUUID) return crypto.randomUUID(); }catch(e){}
   return Math.random().toString(36).slice(2,9)+Math.random().toString(36).slice(2,9);
@@ -605,10 +632,12 @@ function onLeave(dateStr,empId){ return DB.leaves.some(l=>l.empId===empId && dat
 const views={today:'v-today',week:'v-week',staff:'v-staff',leave:'v-leave',settings:'v-settings'};
 let curTab='week';
 function go(tab){
+  if(!views[tab]) tab='week';
   curTab=tab;
   Object.values(views).forEach(id=>document.getElementById(id).classList.remove('active'));
   document.getElementById(views[tab]).classList.add('active');
-  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+  document.querySelectorAll('nav.tabs button').forEach(b=>{b.classList.toggle('on',b.dataset.tab===tab); if(b.dataset.tab===tab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
+  if(location.hash!=='#'+tab) history.pushState(null,'','#'+tab);
   window.scrollTo(0,0);
   render();
 }
@@ -625,7 +654,7 @@ document.getElementById('fabBtn').onclick=()=>{
    ============================================================ */
 function render(){
   document.getElementById('brandName').textContent='Tiệm Cà Phê Cá Hồi';
-  document.getElementById('brandSub').textContent=(DB.settings.branch||'')+' · Xếp ca';
+  document.getElementById('brandSub').textContent=(DB.settings.branch||'')+' · Lịch bơi · Ver 2.0';
   const fab=document.getElementById('fab');
   fab.style.display=(curTab==='staff'||curTab==='leave')?'block':'none';
   if(curTab==='today') renderToday();
@@ -639,6 +668,7 @@ function render(){
    TODAY
    ============================================================ */
 function renderToday(){
+  renderPageHeader('today');
   const el=document.getElementById('v-today');
   const now=new Date(); const today=ymd(now);
   const mon=mondayOf(now); const dayIdx=(now.getDay()+6)%7;
@@ -742,13 +772,14 @@ function dayWarnings(mon,dayIdx,dateStr){
    ============================================================ */
 let selDay=null, editMode=false, weekView='day';   // 'day' | 'emp'
 function renderWeek(){
+  renderPageHeader('week');
   const el=document.getElementById('v-week');
   const mon=curMonday; const sun=addDays(mon,6);
   const now=new Date(); const todayStr=ymd(now);
   // chọn ngày mặc định: hôm nay nếu trong tuần, không thì T2
   if(selDay==null){ const wd=(now.getDay()+6)%7; selDay=(ymd(mon)<=todayStr&&todayStr<=ymd(sun))?wd:0; }
 
-  let html=`<div class="week-toolbar">
+  let html=renderPocketHeader(mon)+`<div class="schedule-panel"><div class="week-toolbar">
     <div class="weeknav">
       <button id="wPrev" aria-label="Tuần trước"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
       <div class="wlabel"><b>${dmShort(mon)} – ${dmShort(sun)}</b><span>${weekLabel(mon)}</span></div>
@@ -759,13 +790,17 @@ function renderWeek(){
   </div>`;
 
   // chuyển chế độ xem
-  html+=`<div class="seg" style="margin:8px 0 4px"><button id="vwDay" class="${weekView==='day'?'on':''}">Theo ngày</button><button id="vwEmp" class="${weekView==='emp'?'on':''}">Theo người</button></div>`;
+  if(weekView==='summary'){
+    html+='<section class="summary-view"><h2>Tổng kết tuần</h2>'+weekSummary(mon)+'</section></div>';
+    el.innerHTML=html;el.querySelector('.week-totals').open=true;bindWeekNav();return;
+  }
 
   if(weekView==='emp'){
-    html+=renderEmpWeek(mon);
+    html+=renderEmpWeek(mon)+'</div>';
     el.innerHTML=html;
     bindWeekNav(); bindViewSeg();
-    document.querySelectorAll('.erow').forEach(r=>r.onclick=()=>{ const d=+r.dataset.jump; if(!isNaN(d)){ selDay=d; weekView='day'; renderWeek(); } });
+    document.querySelectorAll('[data-cell-emp]').forEach(b=>b.onclick=()=>openCellSheet(b.dataset.cellEmp,+b.dataset.cellDay));
+    document.querySelectorAll('[data-person-emp]').forEach(b=>b.onclick=()=>openCellSheet(b.dataset.personEmp,+b.dataset.personDay));
     return;
   }
 
@@ -773,13 +808,13 @@ function renderWeek(){
   html+=`<div class="daysel">`;
   for(let d=0;d<7;d++){
     const date=addDays(mon,d); const isT=ymd(date)===todayStr;
-    html+=`<button class="${d===selDay?'on':''} ${isT?'today':''}" data-day="${d}">${DOW[d]}<small>${dmShort(date)}</small></button>`;
+    const count=DB.employees.reduce((n,e)=>n+cellShifts(mon,e.id,d).length,0);
+    html+=`<button aria-pressed="${d===selDay}" aria-label="${DOW_FULL[d]}, ${dmShort(date)}, ${count} lượt ca" class="${d===selDay?'on':''} ${isT?'today':''}" data-day="${d}"><span>${DOW[d]}${isT?' · nay':''}</span><b>${pad(date.getDate())}</b><small>${count} lượt ca</small></button>`;
   }
   html+=`</div>`;
 
   if(DB.employees.length===0){
-    html+=`<div class="empty" style="padding-bottom:8px"><div class="big">📋</div>Chưa có nhân viên.<br>Đồng bộ đăng ký từ Google Sheet để app tự tạo,<br>hoặc thêm tay ở tab <b>Nhân viên</b>.</div>
-      <button class="btn wide" id="btnSyncEmpty" style="margin-top:4px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg>Đồng bộ từ Google Sheet</button>`;
+    html+=`<div class="onboarding"><div class="empty-calendar" aria-hidden="true">${uiIcon('calendar')}</div><span class="eyebrow">SẴN SÀNG CHO TUẦN MỚI</span><h2>Bắt đầu với đội ngũ của bạn</h2><p>Thêm nhân viên hoặc lấy đăng ký từ Google Sheet.<br>Lịch làm việc của cả đội sẽ xuất hiện tại đây.</p><div class="empty-actions"><button class="btn" id="btnSyncEmpty">${uiIcon('sync')} Đồng bộ Google Sheet</button><button class="btn ghost" onclick="go('staff');openEmpSheet()">${uiIcon('plus')} Thêm nhân viên</button></div><a class="demo-link" href="?demo=1#week">Xem thử một tuần có sẵn dữ liệu ${uiIcon('arrow')}</a></div></div>`;
     el.innerHTML=html;
     bindWeekNav(); bindDaySel(); bindViewSeg();
     const se=document.getElementById('btnSyncEmpty'); if(se) se.onclick=syncFromSheet;
@@ -789,15 +824,17 @@ function renderWeek(){
   const dDate=addDays(mon,selDay); const dStr=ymd(dDate);
   // thanh: ngày + nút Sửa
   html+=`<div class="dbar"><div class="dttl">${DOW_FULL[(dDate.getDay()+6)%7]}, ${dmShort(dDate)}</div>
-    <button class="editbtn ${editMode?'on':''}" id="btnEdit">${editMode?'✓ Xong':'✎ Sửa'}</button></div>`;
+    <button class="editbtn ${editMode?'on':''}" id="btnEdit" aria-pressed="${editMode}">${uiIcon(editMode?'check':'edit')}${editMode?'Hoàn tất':'Chỉnh sửa ca'}</button></div>`;
   // cảnh báo ngày
   const dw=dayWarnings(mon,selDay,dStr);
   if(dw.length) html+=`<div class="warnbox"><h3>⚠️ Ngày ${DOW[selDay]} cần chú ý</h3><ul>${dw.map(w=>`<li>${w}</li>`).join('')}</ul></div>`;
 
   // từng CA (khung giờ)
+  html+='<div class="roster-grid">';
   DB.shiftTypes.forEach(st=>{
     html+=renderShiftBlock(mon,selDay,st);
   });
+  html+='</div><div class="schedule-foot">'+uiIcon('info')+' Có người báo nghỉ? Chọn “Chỉnh sửa ca” để đổi người.</div></div>';
 
   el.innerHTML=html;
   bindWeekNav(); bindDaySel(); bindViewSeg();
@@ -814,20 +851,7 @@ function bindViewSeg(){
 }
 /* --- xem theo người: mỗi bạn 1 dòng × 7 ngày --- */
 function renderEmpWeek(mon){
-  if(!DB.employees.length) return `<div class="empty"><div class="big">📋</div>Chưa có nhân viên.</div>`;
-  const todayStr=ymd(new Date());
-  let hl=-1; for(let d=0;d<7;d++) if(ymd(addDays(mon,d))===todayStr) hl=d;
-  let h=`<div class="card" style="margin-top:10px;overflow:hidden">`;
-  DB.employees.forEach(e=>{
-    let n=0; for(let d=0;d<7;d++) n+=cellShifts(mon,e.id,d).length;
-    const hrs=weekHours(mon,e.id);
-    const low=DB.settings.minShifts&&n<DB.settings.minShifts;
-    h+=`<div class="erow"><div class="ename">${esc(e.name)}<small>${esc(e.pos||'')} · <span class="${low?'danger-text':''}">${n} ca</span> · ${fmtH(hrs)}</small></div>${empWeekStrip(mon,e.id,hl)}</div>`;
-  });
-  h+=`</div><div class="legend" style="margin-top:10px">
-    <span><span class="pl pm">S</span>Sáng</span><span><span class="pl pa">C</span>Chiều</span><span><span class="pl pe">T</span>Tối</span>
-    <span class="muted">Bấm 1 dòng để về ngày hôm nay</span></div>`;
-  return h;
+  return renderPeopleSchedule(mon);
 }
 /* --- các buổi của 1 người trong 1 ngày --- */
 function periodsOf(mon,empId,day){
@@ -858,7 +882,8 @@ function renderShiftBlock(mon,day,st){
   const totalHave=Object.values(byRole).reduce((a,l)=>a+l.length,0);
   const totalNeed=Object.values(req).reduce((a,b)=>a+b,0);
   const allOk=!totalNeed||totalHave>=totalNeed;
-  let h=`<div class="rblock card ${allOk?'':'lack'}"><div class="rhead"><span class="dot c-${cls}"></span>${st.label}<span class="time">${fmtH(st.hours)}</span></div>`;
+  const period=PERIODS.find(p=>p.key===cls);
+  let h=`<div class="rblock card shift-${cls} ${allOk?'':'lack'}"><div class="rhead shift-heading"><div class="shift-topline"><span class="shift-name">${uiIcon(cls==='m'?'sun':cls==='a'?'afternoon':'moon')}${period?'Ca '+period.name.toLowerCase():'Ca làm việc'}</span><span class="shift-duration">${fmtH(st.hours)}</span></div><div class="shift-bottomline"><b class="shift-range">${prettyShiftTime(st.label)}</b><span class="shift-coverage">${totalHave}/${totalNeed} người</span></div></div>`;
   DB.settings.positions.forEach(role=>{
     const list=byRole[role]||[];
     const need=req[role]||0;
@@ -872,7 +897,7 @@ function renderShiftBlock(mon,day,st){
       h+=`<button class="addp" data-act="add" data-day="${day}" data-st="${st.id}" data-role="${esc(role)}" aria-label="Thêm">+</button>`;
     }else{
       if(list.length){
-        h+=`<div class="names">`+list.map(x=>`<span class="nm2">${x.c.lock?'📌 ':''}${x.c.bike?'🛵 ':''}${esc(x.e.name)}</span>`).join('<span class="sep">·</span>')+`</div>`;
+        h+=`<div class="names">`+list.map(x=>`<span class="person-chip"><span class="mini-avatar">${esc(initials(x.e.name))}</span><span>${esc(x.e.name)}</span>${x.c.lock?'<span title="Ca đã ghim">'+uiIcon('pin')+'</span>':''}${x.c.bike?'<span class="bike-label">Giữ xe</span>':''}</span>`).join('')+`</div>`;
       } else h+=`<span class="nobody">chưa có ai</span>`;
     }
     h+=`</div></div>`;
@@ -986,6 +1011,8 @@ function weekLabel(mon){
   return diff>0?`+${diff} tuần`:`${diff} tuần`;
 }
 function bindWeekNav(){
+  document.getElementById('wToday').textContent='Tuần này';
+  document.getElementById('wMore').textContent='Thêm';
   document.getElementById('wPrev').onclick=()=>{curMonday=addDays(curMonday,-7);renderWeek();};
   document.getElementById('wNext').onclick=()=>{curMonday=addDays(curMonday,7);renderWeek();};
   document.getElementById('wToday').onclick=()=>{curMonday=mondayOf(new Date());selDay=null;renderWeek();};
@@ -1058,6 +1085,7 @@ function drawCellSheet(e,date,leave){
     drawCellSheet(e,date,leave);
   };
   document.getElementById('saveCell').onclick=()=>{commitCell();closeSheet();renderWeek();};
+  if(sheet.classList.contains('show'))openAccessibleSheet();
 }
 function commitCell(){
   setCell(curMonday,sheetState.empId,sheetState.day,sheetState.draft.map(c=>({...c})));
@@ -1105,26 +1133,34 @@ function sheetCsvUrl(link){
   let gid='0'; const g=String(link).match(/[#&?]gid=(\d+)/); if(g)gid=g[1];
   return `https://docs.google.com/spreadsheets/d/${m[1]}/gviz/tq?tqx=out:csv&gid=${gid}`;
 }
+let syncPending=false;
 async function syncFromSheet(){
+  if(syncPending)return;
   const link=(DB.settings.sheetUrl||'').trim();
   if(!link){ toast('Chưa có link Sheet — vào Cài đặt để dán'); go('settings'); return; }
   const url=sheetCsvUrl(link);
   if(!url){ toast('Link Google Sheet không hợp lệ'); return; }
+  syncPending=true;
+  document.querySelectorAll('[data-sync],#btnSyncEmpty').forEach(b=>{b.disabled=true;b.setAttribute('aria-busy','true');});
   toast('Đang tải từ Google Sheet…');
   let text;
   try{
-    const r=await fetch(url+'&_='+Date.now(),{cache:'no-store'});
+    const r=await fetch(url+'&_='+Date.now(),{cache:'no-store',signal:AbortSignal.timeout(20000)});
     if(!r.ok) throw new Error('HTTP '+r.status);
     text=await r.text();
   }catch(e){
     alert('Không tải được từ Google Sheet.\n\nKiểm tra: có mạng chưa, và Sheet đã đặt chia sẻ "Bất kỳ ai có đường liên kết".\n\n('+e.message+')');
-    renderWeek(); return;
+    syncPending=false;renderWeek(); return;
   }
   try{ processRegistration(text); }
   catch(e){ alert('Lấy được dữ liệu nhưng chưa đọc được: '+e.message); renderWeek(); }
+  finally{syncPending=false;document.querySelectorAll('[data-sync],#btnSyncEmpty').forEach(b=>{b.disabled=false;b.removeAttribute('aria-busy');});}
 }
 /* --- menu thao tác (gom hết nút vào 1 chỗ) --- */
 function openActionsSheet(){
+  openSimpleSchedule();
+}
+function openLegacyActionsSheet(){
   const mon=curMonday, wk=weekKey(mon);
   const hasAvail=!!(DB.availability&&DB.availability[wk]&&Object.keys(DB.availability[wk]).length);
   const hasLink=!!(DB.settings.sheetUrl||'').trim();
@@ -1181,7 +1217,7 @@ function showImportPreview(people){
   let html=`<div class="grip"></div><h2>Nhận đăng ký rảnh</h2>
     <div class="sub">Tuần ${dmShort(mon)} – ${dmShort(addDays(mon,6))} · ${people.length} người · ${totalClaims} buổi rảnh</div>
     <div class="swapbar sb-brand">
-      App sẽ tự xếp ca cân bằng từ các buổi rảnh (đủ định mức, chia đều, ưu tiên người ít ca). Bạn chỉnh tay được sau.</div>
+      Khi bấm nút bên dưới, ứng dụng sẽ lưu đăng ký và xếp lại tuần đang xem. Các ca đã ghim được giữ lại. Bạn có thể sửa lịch sau khi xếp.</div>
     <div class="existing" style="max-height:34vh;overflow:auto">`;
   people.forEach(p=>{ html+=`<div class="exrow"><div class="av" style="width:30px;height:30px;font-size:12px;border-radius:50%;background:var(--brand-soft);color:var(--brand-ink);display:grid;place-items:center;font-weight:800">${initials(p.name)}</div>
     <div><b>${esc(p.name)}</b><div class="muted" style="font-size:12px">${esc(p.role)} · rảnh ${p.claims.length} buổi</div></div></div>`; });
@@ -1195,6 +1231,7 @@ function showImportPreview(people){
 }
 function applyRegistration(people){
   const mon=curMonday, wk=weekKey(mon);
+  if(DB.schedule[wk]&&Object.keys(DB.schedule[wk]).length&&!confirm(`Tuần ${dmShort(mon)} – ${dmShort(addDays(mon,6))} đã có lịch. Xếp lại tuần này từ đăng ký mới? Lịch các tuần khác không thay đổi.`))return;
   // 1) khớp / tạo nhân viên (cập nhật vị trí theo form)
   const created=[];
   people.forEach(p=>{
@@ -1463,15 +1500,28 @@ function roundRect(x,a,b,w,h,r){x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,
 /* ============================================================
    STAFF
    ============================================================ */
+let staffSearch='',staffRole='';
 function renderStaff(){
+  renderPageHeader('staff');
   const el=document.getElementById('v-staff');
   const mon=mondayOf(new Date());
-  let html=`<div class="sec-title">Nhân viên Cơ sở 3 · ${DB.employees.length} người</div>`;
+  let html=`<div class="staff-tools"><div class="search-field">${uiIcon('search')}<label class="sr-only" for="staffSearch">Tìm nhân viên</label><input id="staffSearch" type="search" value="${esc(staffSearch)}" placeholder="Tìm theo tên hoặc số điện thoại…"></div><label class="sr-only" for="staffRole">Lọc vị trí</label><select id="staffRole"><option value="">Tất cả vị trí</option>${DB.settings.positions.map(p=>`<option ${staffRole===p?'selected':''} value="${esc(p)}">${esc(p)}</option>`).join('')}</select></div><div class="sec-title">${esc(DB.settings.branch)} · ${DB.employees.length} thành viên</div><div id="staffResults"></div>`;
+  el.innerHTML=html;
+  document.getElementById('staffSearch').oninput=e=>{staffSearch=e.target.value;drawStaffResults();};
+  document.getElementById('staffRole').onchange=e=>{staffRole=e.target.value;drawStaffResults();};
+  drawStaffResults();
+}
+function drawStaffResults(){
+  const mon=mondayOf(new Date()),el=document.getElementById('staffResults');
+  const employees=DB.employees.filter(e=>(!staffRole||e.pos===staffRole)&&noAccent(e.name+' '+(e.phone||'')).includes(noAccent(staffSearch)));
+  let html='';
   if(!DB.employees.length){
-    html+=`<div class="empty"><div class="big">🧑‍🍳</div>Chưa có ai. Bấm nút <b>+</b> để thêm nhân viên đầu tiên.</div>`;
+    html+=`<div class="onboarding card"><div class="empty-calendar">${uiIcon('users')}</div><h2>Chào đón thành viên đầu tiên</h2><p>Thêm tên, vị trí và lương theo giờ.<br>Giờ công sẽ được tính từ lịch đã phân công.</p><button class="btn" onclick="openEmpSheet()">${uiIcon('plus')} Thêm nhân viên</button></div>`;
+  }else if(!employees.length){
+    html='<div class="empty">Không tìm thấy nhân viên phù hợp.<br>Thử tên khác hoặc chọn tất cả vị trí.</div>';
   }else{
-    html+=`<div class="card">`;
-    DB.employees.forEach(e=>{
+    html+=`<div class="staff-roster">`;
+    employees.forEach(e=>{
       const wh=weekHours(mon,e.id);
       html+=`<div class="li" data-emp="${e.id}"><div class="av">${initials(e.name)}</div>
         <div class="info"><b>${esc(e.name)}</b><span>${esc(e.pos||'—')}${e.rate?' · '+money(e.rate)+'/h':''}${e.phone?' · '+esc(e.phone):''}</span></div>
@@ -1527,6 +1577,7 @@ function openEmpSheet(empId){
    ============================================================ */
 let leaveTab='leave';
 function renderLeave(){
+  renderPageHeader('leave');
   const el=document.getElementById('v-leave');
   let html=`<div class="seg" style="margin:6px 0 4px">
       <button id="tabLeave" class="${leaveTab==='leave'?'on':''}">🌙 Xin nghỉ</button>
@@ -1614,6 +1665,7 @@ function empOptions(sel){return DB.employees.map(e=>`<option value="${e.id}" ${e
    SETTINGS
    ============================================================ */
 function renderSettings(){
+  renderPageHeader('settings');
   const el=document.getElementById('v-settings');
   let html=`<div class="sec-title">Quán</div>
     <div class="card pad">
@@ -1674,7 +1726,7 @@ function renderSettings(){
 
     <div class="sec-title">Sao lưu dữ liệu</div>
     <div class="card pad">
-      <p class="muted" style="margin:0 0 12px;font-size:13.5px">Dữ liệu chỉ lưu trong iPhone này. Nên sao lưu định kỳ phòng khi đổi máy.</p>
+      <p class="muted" style="margin:0 0 12px;font-size:13.5px">Dữ liệu lưu trong trình duyệt trên thiết bị này, không tự đồng bộ giữa các máy. Hãy xuất file sao lưu trước khi đổi máy hoặc xoá dữ liệu trình duyệt.</p>
       <div class="two">
         <button class="btn ghost" id="btnBackup">Xuất file sao lưu</button>
         <button class="btn ghost" id="btnRestore">Khôi phục</button>
@@ -1689,6 +1741,7 @@ function renderSettings(){
     <p class="muted" style="text-align:center;font-size:12px;margin:22px 0 8px">Xếp Ca · lưu offline trên máy</p>`;
   el.innerHTML=html;
 
+  groupSettings(el);
   document.getElementById('setBranch').onchange=ev=>{DB.settings.branch=ev.target.value.trim()||'Cơ sở 3';save();render();};
   document.getElementById('setSheet').onchange=ev=>{DB.settings.sheetUrl=ev.target.value.trim();save();};
   document.querySelectorAll('.rq-in').forEach(inp=>inp.onchange=ev=>{
@@ -1762,11 +1815,11 @@ function restore(ev){
    SHEET + TOAST helpers
    ============================================================ */
 const backdrop=document.getElementById('backdrop'), sheet=document.getElementById('sheet');
-function openSheet(){backdrop.classList.add('show');requestAnimationFrame(()=>sheet.classList.add('show'));}
-function closeSheet(){sheet.classList.remove('show');backdrop.classList.remove('show');}
+function openSheet(){openAccessibleSheet();}
+function closeSheet(){closeAccessibleSheet();}
 backdrop.onclick=closeSheet;
 let toastT;
-function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),1900);}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),4000);}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function money(n){return Math.round(n).toLocaleString('vi-VN')+'đ';}
 function fmtDate(s){const d=parseYMD(s);return `${DOW[(d.getDay()+6)%7]} ${dmShort(d)}`;}
@@ -1792,5 +1845,7 @@ if('serviceWorker' in navigator){
 
 /* ---------- go ---------- */
 document.getElementById('importFile').onchange=onImportFile;
-go('week');
+initUI();
+go(location.hash.slice(1)||'week');
 </script>
+</html>

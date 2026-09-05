@@ -1,13 +1,13 @@
 {
-  "name": "Tiệm Cà Phê Cá Hồi — Xếp Ca",
-  "short_name": "Cá Hồi",
+  "name": "Lịch bơi — Ver 2.0",
+  "short_name": "Lịch bơi",
   "description": "Xếp ca, đăng ký buổi rảnh, tính lương theo giờ — Tiệm Cà Phê Cá Hồi, Cơ sở 3.",
   "start_url": "index.html",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#F5EDE7",
-  "theme_color": "#8C2018",
+  "orientation": "any",
+  "background_color": "#f4f1eb",
+  "theme_color": "#f4f1eb",
   "lang": "vi",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },

@@ -3,3 +3,12 @@ XepCa-app.zip
 _*.csv
 _*.txt
 _dump.json
+.server-data/
+.server-test-*/
+.env
+.env.*
+.dev.vars
+.dev.vars.*
+node_modules/
+manager-key.txt
+published.json

@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lịch bơi — Ver 2.0</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#e8edf3;font-family:"Segoe UI",sans-serif;color:#202e40}header{padding:14px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:white;border-bottom:1px solid #cbd3de}header>b{margin-right:auto;font-size:14px}button,a{font:12px "Segoe UI",sans-serif;padding:9px 12px;min-height:40px;border:1px solid #a5afbe;background:white;border-radius:7px;color:#202e40;cursor:pointer;text-decoration:none}button[aria-pressed=true]{background:#bd493b;color:white;border-color:#bd493b}button:focus-visible,a:focus-visible{outline:3px solid #bd493b;outline-offset:2px}.note{padding:10px 18px;font-size:12px;color:#526173;margin:0}#stage{position:relative;margin:0 auto 24px}iframe{position:absolute;top:0;left:0;border:1px solid #a5afbe;border-radius:10px;background:white;transform-origin:top left}body>footer{text-align:center;padding:8px 16px 24px;font-size:12px;color:#526173}
+</style></head><body>
+<header><b>Lịch bơi / Ver 2.0</b><button data-width="1440" data-height="1050" aria-pressed="true">Máy tính</button><button data-width="768" data-height="1024" aria-pressed="false">Máy tính bảng</button><button data-width="375" data-height="812" aria-pressed="false">Điện thoại</button><a href="./?demo=1#week" target="_blank" rel="noopener">Mở toàn màn hình ↗</a></header>
+<p class="note">Dữ liệu mẫu riêng · Có thể bấm thử các chức năng · Dùng biểu tượng trăng/mặt trời để đổi sáng tối.</p>
+<div id="stage"><iframe id="preview" title="Ứng dụng xếp ca Cá Hồi" src="./?demo=1#week"></iframe></div>
+<footer>Chế độ máy tính được thu nhỏ để vừa khung xem. Mở toàn màn hình để xem đúng kích thước.</footer>
+<script>
+let width=375,height=812;const frame=document.getElementById('preview'),stage=document.getElementById('stage');
+function fit(){const scale=Math.min(1,(innerWidth-24)/width);frame.style.width=width+'px';frame.style.height=height+'px';frame.style.transform=`scale(${scale})`;stage.style.width=width*scale+'px';stage.style.height=height*scale+'px';}
+document.querySelectorAll('button[data-width]').forEach(b=>{b.setAttribute('aria-pressed',+b.dataset.width===width);b.onclick=()=>{width=+b.dataset.width;height=+b.dataset.height;document.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));fit();};});window.addEventListener('resize',fit);fit();
+</script></body></html>
